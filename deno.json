@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "license": "MIT",
   "exports": {
-    ".": "./src/mod.ts"
+    ".": "./src/mod.ts",
+    "./ui/editable": "./src/ui/editable/mod.ts"
   },
   "imports": {
     "@dune/core": "../dune/src/mod.ts",
@@ -11,6 +12,9 @@
     "@dune/core/inline-edit": "../dune/src/inline-edit/mod.ts",
     "@std/path": "jsr:@std/path@^1",
     "@std/yaml": "jsr:@std/yaml@^1",
+    "preact": "npm:preact@^10",
+    "preact/hooks": "npm:preact@^10/hooks",
+    "preact/jsx-runtime": "npm:preact@^10/jsx-runtime",
     "yjs": "npm:yjs@^13",
     "y-protocols/awareness": "npm:y-protocols@^1/awareness",
     "y-protocols/sync": "npm:y-protocols@^1/sync",

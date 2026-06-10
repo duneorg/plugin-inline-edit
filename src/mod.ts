@@ -4,8 +4,8 @@
  * Y.js-backed real-time inline content editing plugin for Dune CMS.
  *
  * Provides server-side session management, WebSocket sync, Y.js document
- * persistence, and admin bar injection. The client side (TipTap WYSIWYG,
- * Preact island components) lives in `@dune/core/ui/editable`.
+ * persistence, admin bar injection, and the client-side component kit
+ * (TipTap WYSIWYG, Preact islands) under `@dune/plugin-inline-edit/ui/editable`.
  *
  * ## Installation
  *
