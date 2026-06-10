@@ -67,3 +67,10 @@ const plugin: DunePlugin = {
 };
 
 export default plugin;
+
+export { createInlineEditManager } from "./manager.ts";
+export type {
+  InlineEditClient,
+  InlineEditManagerOptions,
+  InlineEditSession,
+} from "./types.ts";

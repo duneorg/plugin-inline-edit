@@ -19,7 +19,7 @@ import * as awarenessProtocol from "y-protocols/awareness";
 import * as encoding from "lib0/encoding";
 import * as decoding from "lib0/decoding";
 
-import type { InlineEditClient, InlineEditSession } from "@dune/core/inline-edit";
+import type { InlineEditClient, InlineEditSession } from "./types.ts";
 import { persistYDoc } from "./ydoc-manager.ts";
 import type { StorageAdapter } from "@dune/core";
 
