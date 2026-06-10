@@ -1,0 +1,20 @@
+{
+  "name": "@dune/plugin-inline-edit",
+  "version": "1.0.0",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/mod.ts"
+  },
+  "imports": {
+    "@dune/core": "../dune/src/mod.ts",
+    "@dune/core/plugins": "../dune/src/plugins/mod.ts",
+    "@dune/core/inline-edit": "../dune/src/inline-edit/mod.ts",
+    "@std/path": "jsr:@std/path@^1",
+    "@std/yaml": "jsr:@std/yaml@^1",
+    "yjs": "npm:yjs@^13",
+    "y-protocols/awareness": "npm:y-protocols@^1/awareness",
+    "y-protocols/sync": "npm:y-protocols@^1/sync",
+    "lib0/encoding": "npm:lib0@^0.2/encoding",
+    "lib0/decoding": "npm:lib0@^0.2/decoding"
+  }
+}
