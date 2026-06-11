@@ -8,9 +8,9 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    # See duneorg/dune publish.yml — deno publish intermittently hangs in
-    # the Sigstore provenance phase (jsr-io/jsr#1448); the artifact is live
-    # within minutes regardless of job status.
+    # Insurance against hung publishes (jsr-io/jsr#1448 is fixed upstream).
+    # A killed job after upload is harmless — verify via the version's
+    # meta.json on jsr.io rather than the job status.
     timeout-minutes: 15
     permissions:
       contents: read
@@ -23,4 +23,4 @@ jobs:
         with:
           deno-version: v2.x
 
-      - run: deno publish --no-provenance
+      - run: deno publish
