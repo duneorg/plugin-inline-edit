@@ -7,9 +7,7 @@
     "./ui/editable": "./src/ui/editable/mod.ts"
   },
   "imports": {
-    "@dune/core": "../dune/src/mod.ts",
-    "@dune/core/plugins": "../dune/src/plugins/mod.ts",
-    "@dune/core/inline-edit": "../dune/src/inline-edit/mod.ts",
+    "@dune/core": "jsr:@dune/core@^0.18.0",
     "@std/path": "jsr:@std/path@^1",
     "@std/yaml": "jsr:@std/yaml@^1",
     "preact": "npm:preact@^10",

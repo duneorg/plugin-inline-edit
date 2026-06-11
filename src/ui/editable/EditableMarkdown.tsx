@@ -100,7 +100,7 @@ function EditableMarkdownActive({
         import("npm:@tiptap/starter-kit@^2"),
         import("npm:@tiptap/extension-collaboration@^2"),
         import("npm:@tiptap/extension-collaboration-cursor@^2"),
-        import("npm:tiptap-markdown@^0"),
+        import("npm:tiptap-markdown@~0.8"),
         import("npm:yjs@^13"),
         import("npm:y-websocket@^2"),
       ]);

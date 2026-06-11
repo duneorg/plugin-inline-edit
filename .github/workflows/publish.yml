@@ -1,0 +1,26 @@
+name: Publish to JSR
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # See duneorg/dune publish.yml — deno publish intermittently hangs in
+    # the Sigstore provenance phase (jsr-io/jsr#1448); the artifact is live
+    # within minutes regardless of job status.
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write  # required for JSR OIDC auth
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - run: deno publish --no-provenance
