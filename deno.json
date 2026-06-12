@@ -3,20 +3,19 @@
   "version": "1.0.0",
   "license": "MIT",
   "exports": {
-    ".": "./src/mod.ts",
-    "./ui/editable": "./src/ui/editable/mod.ts"
+    ".": "./src/mod.ts"
   },
   "imports": {
-    "@dune/core": "jsr:@dune/core@^0.18.0",
+    "@dune/core": "jsr:@dune/core@^0.19",
     "@std/path": "jsr:@std/path@^1",
     "@std/yaml": "jsr:@std/yaml@^1",
-    "preact": "npm:preact@^10",
-    "preact/hooks": "npm:preact@^10/hooks",
-    "preact/jsx-runtime": "npm:preact@^10/jsx-runtime",
     "yjs": "npm:yjs@^13",
     "y-protocols/awareness": "npm:y-protocols@^1/awareness",
     "y-protocols/sync": "npm:y-protocols@^1/sync",
     "lib0/encoding": "npm:lib0@^0.2/encoding",
-    "lib0/decoding": "npm:lib0@^0.2/decoding"
+    "lib0/decoding": "npm:lib0@^0.2/decoding",
+    "@tiptap/core": "npm:@tiptap/core@^2.27",
+    "@tiptap/starter-kit": "npm:@tiptap/starter-kit@^2.27",
+    "tiptap-markdown": "npm:tiptap-markdown@~0.8.10"
   }
 }

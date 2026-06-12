@@ -5,30 +5,37 @@
  * Two passes run on the rendered HTML:
  *
  *   1. **Annotation pass** — adds `data-dune-field` / `data-dune-editable`
- *      attributes to standard elements (h1 → title, article/main → body) so
- *      the auto-overlay client script can activate inline editors without any
- *      template changes.  Elements with `data-dune-no-edit` are skipped.
- *      Elements already carrying `data-dune-*` attributes (from the
- *      `<EditableText>` component kit) are left untouched.
+ *      attributes so the auto-overlay client script can activate inline
+ *      editors. The page title is detected heuristically (first `<h1>`);
+ *      the body is annotated only on the element the theme explicitly marks
+ *      with `data-dune-body` — there is no body-detection heuristic, because
+ *      a wrong guess round-trips template-generated HTML into the markdown
+ *      source on save. Elements with `data-dune-no-edit` are skipped.
+ *      Elements already carrying `data-dune-*` attributes (written by hand
+ *      or rendered by the `@dune/core/ui/editable` marker components) are
+ *      left untouched.
  *
- *   2. **Injection pass** — appends the admin bar HTML + auto-overlay client
- *      script before `</body>`.  The script is self-contained vanilla JS —
- *      no external imports, no Preact, no islands.
+ *   2. **Injection pass** — appends the admin bar HTML + overlay client
+ *      script before `</body>`.  The script is self-contained vanilla JS;
+ *      the TipTap/Y.js editor bundle (built by core from this plugin's
+ *      `clientEntries`, served at /plugins/inline-edit/editor.js) is
+ *      lazy-imported only when a body edit starts, so browsing costs nothing.
  */
 
 // ── HTML annotation pass ──────────────────────────────────────────────────────
 
 /**
- * Annotate standard page elements with `data-dune-*` attributes so the
- * auto-overlay client script can activate inline editors without template
- * changes.
+ * Annotate editable page elements with `data-dune-*` attributes so the
+ * auto-overlay client script can activate inline editors.
  *
  * Rules:
- * - Skip any element that already has a `data-dune-` attribute.
- * - Skip any element with `data-dune-no-edit`.
+ * - Skip any element that already has a `data-dune-field` / `data-dune-editable`
+ *   attribute (component kit) or `data-dune-no-edit`.
  * - `<h1>` → title field annotation (first occurrence only).
- * - `<article>` or first `<div class="...content...">` → body annotation.
- *   (`<main>` is excluded — it is a layout wrapper, not a content element.)
+ * - The first element carrying `data-dune-body` → body annotation. Themes opt
+ *   in by placing this attribute on the element that wraps the rendered
+ *   markdown body (the starter template does this by default). Without the
+ *   marker, body editing is unavailable for the page.
  */
 export function annotateEditableElements(html: string, sourcePath: string): string {
   const src = `data-dune-source="${escapeAttr(sourcePath)}"`;
@@ -41,18 +48,17 @@ export function annotateEditableElements(html: string, sourcePath: string): stri
     },
   );
 
-  // The class regex uses (?!-) to avoid matching "content" in hyphenated
-  // compound class names like "content-header" or "main-content".
-  const bodySelector =
-    /(<article\b)([^>]*?>)|(<div\b[^>]*?\bclass="[^"]*\bcontent(?!-)[^"]*"[^>]*?>)/g;
-
   let bodyAnnotated = false;
-  annotated = annotated.replace(bodySelector, (match) => {
-    if (bodyAnnotated) return match;
-    if (match.includes("data-dune-")) return match;
-    bodyAnnotated = true;
-    return match.replace(/>$/, ` data-dune-editable="body" ${src}>`);
-  });
+  annotated = annotated.replace(
+    /<[a-zA-Z][a-zA-Z0-9-]*\b[^>]*\bdata-dune-body\b[^>]*>/g,
+    (match) => {
+      if (bodyAnnotated) return match;
+      if (match.includes("data-dune-editable") || match.includes("data-dune-no-edit")) return match;
+      bodyAnnotated = true;
+      const sourceAttr = match.includes("data-dune-source") ? "" : ` ${src}`;
+      return match.replace(/>$/, ` data-dune-editable="body"${sourceAttr}>`);
+    },
+  );
 
   return annotated;
 }
@@ -116,35 +122,35 @@ export function buildAdminBarHtml(opts: {
   #dune-admin-bar .dune-ab-user { font-size: 11px; opacity: .5; }
   body { padding-top: 40px !important; }
 
-  /* Component-kit island show-on-hover */
-  .dune-editable-text:hover .dune-edit-handle,
-  .dune-editable-markdown:hover .dune-edit-handle--body { opacity: 1 !important; }
-
-  /* Auto-overlay — component-kit island compatibility */
-  .dune-ao-wrap { position: relative; display: inline; }
-  .dune-ao-handle {
-    position: absolute; top: -6px; right: -6px;
-    background: #3498db; color: #fff;
-    border: none; border-radius: 3px;
-    padding: 1px 5px; font-size: 10px; cursor: pointer;
-    opacity: 0; transition: opacity .15s; z-index: 1000;
-  }
-  .dune-ao-wrap:hover .dune-ao-handle { opacity: 1; }
-
-  /* Auto-overlay — click-to-edit indicators (active when edit mode is on) */
-  body.dune-edit-mode [data-dune-field] { cursor: text; }
+  /* Marker hover indicators (active when edit mode is on).
+     Activation happens via the floating ✎ handle, never by clicking the
+     content itself, so links inside editable regions stay followable. */
   body.dune-edit-mode [data-dune-field]:not([contenteditable="true"]):hover {
     outline: 2px dashed rgba(52,152,219,.5); outline-offset: 2px;
   }
   [data-dune-field][contenteditable="true"] {
     outline: 2px solid #3498db !important; outline-offset: 2px; border-radius: 2px;
   }
-  body.dune-edit-mode [data-dune-body-editable]:not([contenteditable="true"]):hover {
-    outline: 2px dashed rgba(52,152,219,.35); outline-offset: 4px; cursor: text;
+  body.dune-edit-mode [data-dune-editable="body"]:not(.dune-body-editing):hover {
+    outline: 2px dashed rgba(52,152,219,.35); outline-offset: 4px;
   }
-  [data-dune-body-editable][contenteditable="true"] {
-    outline: 2px solid #3498db; outline-offset: 4px;
+
+  /* Floating edit handle — repositioned to the hovered editable element */
+  #dune-ao-edit-handle {
+    position: absolute; display: none;
+    background: #3498db; color: #fff;
+    border: none; border-radius: 4px;
+    padding: 3px 10px; font-size: 11px; cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,.3); z-index: 99998;
   }
+
+  /* Body editing: hide the rendered content while the TipTap editor is mounted */
+  .dune-body-editing > :not(.dune-ao-editor-wrap) { display: none !important; }
+  .dune-tiptap-editor {
+    min-height: 200px; padding: 12px; background: #fff;
+    border: 1px solid #3498db; border-radius: 4px;
+  }
+  .dune-tiptap-editor .ProseMirror { outline: none; }
 
   /* Floating sticky toolbar shown while body editing is active */
   .dune-ao-body-toolbar {
@@ -180,7 +186,9 @@ export function buildAdminBarHtml(opts: {
   window.__DUNE_EDIT_SOURCE_PATH__ = ${jsonStr(sourcePath)};
   window.__DUNE_COMMIT_URL__ = ${jsonStr(commitUrl)};
   window.__DUNE_FIELDS_URL__ = ${jsonStr(fieldsUrl)};
-  window.__DUNE_SOURCE_URL__ = ${jsonStr(commitUrl.replace('/commit', '/source'))};
+  window.__DUNE_SOURCE_URL__ = ${jsonStr(commitUrl.replace("/commit", "/source"))};
+  window.__DUNE_USER_NAME__ = ${jsonStr(userName)};
+  window.__DUNE_EDIT_WS_PATH__ = ${jsonStr(`${adminPrefix}/collab/edit-ws`)};
 
   var editMode = true;
   document.body.classList.add('dune-edit-mode');
@@ -196,6 +204,7 @@ export function buildAdminBarHtml(opts: {
     toggleBtn.style.background = editMode ? '#3498db' : 'rgba(255,255,255,.15)';
     toggleBtn.style.border = editMode ? 'none' : '1px solid rgba(255,255,255,.2)';
     document.body.classList.toggle('dune-edit-mode', editMode);
+    if (!editMode) hideHandle();
     window.dispatchEvent(new CustomEvent('dune:edit-mode-change', { detail: { mode: editMode ? 'edit' : 'preview' } }));
   });
 
@@ -245,218 +254,230 @@ export function buildAdminBarHtml(opts: {
     };
   }
 
-  function activateFieldElement(el) {
-    if (el.dataset.duneAoActive || el.closest('.dune-editable-text')) return;
-    el.dataset.duneAoActive = '1';
+  // ── Floating edit handle ──────────────────────────────────────────────────
+  // One shared ✎ button repositioned to whichever editable element is
+  // hovered. Editing only starts when the handle is clicked — clicks on the
+  // content itself (including links) behave exactly as for visitors.
 
-    var fieldName = el.dataset.duneField;
-    var originalContent = el.textContent;
+  var handle = document.createElement('button');
+  handle.id = 'dune-ao-edit-handle';
+  handle.type = 'button';
+  handle.textContent = '✎ Edit';
+  document.body.appendChild(handle);
+  var handleTarget = null;
 
-    var saveDebounced = debounce(function(value) {
-      patchField(fieldName, value).catch(function() {});
-    }, DEBOUNCE_MS);
+  function showHandle(el) {
+    handleTarget = el;
+    var r = el.getBoundingClientRect();
+    handle.style.top = (window.scrollY + r.top - 10) + 'px';
+    handle.style.left = Math.max(0, window.scrollX + r.right - 56) + 'px';
+    handle.style.display = 'block';
+  }
 
-    el.addEventListener('click', function(e) {
-      if (!editMode || el.contentEditable === 'true') return;
-      e.stopPropagation();
-      el.contentEditable = 'true';
-      el.focus();
-    });
+  function hideHandle() {
+    handleTarget = null;
+    handle.style.display = 'none';
+  }
 
-    el.addEventListener('input', function() {
-      if (el.contentEditable === 'true') saveDebounced(el.textContent);
-    });
+  document.addEventListener('mouseover', function(e) {
+    if (!editMode) { hideHandle(); return; }
+    if (e.target === handle) return;
+    var el = e.target.closest && e.target.closest('[data-dune-field], [data-dune-editable="body"]');
+    if (el && el.contentEditable !== 'true' && !el.dataset.duneEditing) {
+      showHandle(el);
+    } else if (handleTarget && !handleTarget.contains(e.target)) {
+      hideHandle();
+    }
+  });
 
-    el.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
+  handle.addEventListener('click', function() {
+    if (!handleTarget) return;
+    var el = handleTarget;
+    hideHandle();
+    if (el.dataset.duneEditable === 'body') startBodyEditing(el);
+    else startFieldEditing(el);
+  });
+
+  function startFieldEditing(el) {
+    if (el.contentEditable === 'true') return;
+
+    if (!el.dataset.duneAoActive) {
+      el.dataset.duneAoActive = '1';
+      var fieldName = el.dataset.duneField;
+
+      var saveDebounced = debounce(function(value) {
+        patchField(fieldName, value).catch(function() {});
+      }, DEBOUNCE_MS);
+
+      el.addEventListener('input', function() {
+        if (el.contentEditable === 'true') saveDebounced(el.textContent);
+      });
+
+      el.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          el.contentEditable = 'false';
+          el.textContent = el.dataset.duneAoOriginal || '';
+        }
+        if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+      });
+
+      el.addEventListener('blur', function() {
+        if (el.contentEditable !== 'true') return;
         el.contentEditable = 'false';
-        el.textContent = originalContent;
-      }
-      if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
-    });
-
-    el.addEventListener('blur', function() {
-      if (el.contentEditable !== 'true') return;
-      el.contentEditable = 'false';
-      originalContent = el.textContent;
-    });
-  }
-
-  function htmlToMarkdown(html) {
-    var nl = String.fromCharCode(10);
-    var div = document.createElement('div');
-    div.innerHTML = html;
-    function walk(node) {
-      if (node.nodeType === 3) return node.textContent;
-      if (node.nodeType !== 1) return '';
-      var tag = node.tagName.toLowerCase();
-      var inner = Array.from(node.childNodes).map(walk).join('');
-      if (tag === 'p') return inner.trim() + nl + nl;
-      if (tag === 'br') return nl;
-      if (tag === 'h1') return '# ' + inner.trim() + nl + nl;
-      if (tag === 'h2') return '## ' + inner.trim() + nl + nl;
-      if (tag === 'h3') return '### ' + inner.trim() + nl + nl;
-      if (tag === 'h4') return '#### ' + inner.trim() + nl + nl;
-      if (tag === 'h5') return '##### ' + inner.trim() + nl + nl;
-      if (tag === 'h6') return '###### ' + inner.trim() + nl + nl;
-      if (tag === 'strong' || tag === 'b') return '**' + inner + '**';
-      if (tag === 'em' || tag === 'i') return '_' + inner + '_';
-      if (tag === 'code') return '\`' + inner + '\`';
-      if (tag === 'pre') return '\`\`\`' + nl + node.textContent + nl + '\`\`\`' + nl + nl;
-      if (tag === 'blockquote') return inner.trim().split(nl).map(function(l) { return '> ' + l; }).join(nl) + nl + nl;
-      if (tag === 'a') return '[' + inner + '](' + (node.getAttribute('href') || '') + ')';
-      if (tag === 'img') return '![' + (node.getAttribute('alt') || '') + '](' + (node.getAttribute('src') || '') + ')';
-      if (tag === 'ul') return Array.from(node.children).map(function(li) { return '- ' + walk(li).trim(); }).join(nl) + nl + nl;
-      if (tag === 'ol') return Array.from(node.children).map(function(li, i) { return (i + 1) + '. ' + walk(li).trim(); }).join(nl) + nl + nl;
-      if (tag === 'li') return inner;
-      if (tag === 'hr') return '---' + nl + nl;
-      if (tag === 'div') return inner + (inner.slice(-1) === nl ? '' : nl);
-      return inner;
-    }
-    var result = walk(div).trim();
-    var triple = nl + nl + nl;
-    while (result.indexOf(triple) !== -1) result = result.split(triple).join(nl + nl);
-    return result;
-  }
-
-  function activateBodyElement(el) {
-    if (el.dataset.duneAoBodyActive || el.closest('.dune-editable-markdown')) return;
-    el.dataset.duneAoBodyActive = '1';
-
-    var editEl = el;
-    var bodyLocated = false;
-
-    function locateBodyElement() {
-      return fetch(window.__DUNE_SOURCE_URL__, { credentials: 'include' })
-        .then(function(res) { return res.ok ? res.json() : null; })
-        .then(function(data) {
-          if (data && data.body) {
-            var nl = String.fromCharCode(10);
-            var lines = data.body.split(nl);
-            var needle = '';
-            for (var i = 0; i < lines.length; i++) {
-              var line = lines[i].trim();
-              if (line.length < 16 || line[0] === '#' || line.slice(0, 3) === '---' || line[0] === '!' || line[0] === '[') continue;
-              var j = 0;
-              while (j < line.length && (line[j] === '*' || line[j] === '_')) j++;
-              var candidate = line.slice(j, j + 40).trim();
-              if (candidate.length > 10) { needle = candidate; break; }
-            }
-            if (needle) {
-              var w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
-              var n;
-              while ((n = w.nextNode())) {
-                if (n.textContent.indexOf(needle) !== -1) {
-                  var target = n.parentNode;
-                  while (target && target.parentNode !== el) { target = target.parentNode; }
-                  if (target) editEl = target;
-                  break;
-                }
-              }
-            }
-          }
-          editEl.dataset.duneBodyEditable = '1';
-          bodyLocated = true;
-        })
-        .catch(function() { editEl.dataset.duneBodyEditable = '1'; bodyLocated = true; });
+        el.dataset.duneAoOriginal = el.textContent;
+      });
     }
 
-    el.addEventListener('click', async function(e) {
-      if (!editMode) return;
-      if (!bodyLocated) await locateBodyElement();
-      if (!editEl.contains(e.target) || e.target.closest('.dune-ao-body-toolbar')) return;
-      if (editEl.contentEditable === 'true') return;
-      e.stopPropagation();
+    el.dataset.duneAoOriginal = el.textContent;
+    el.contentEditable = 'true';
+    el.focus();
+  }
 
-      var originalBodyHtml = editEl.innerHTML;
-      editEl.contentEditable = 'true';
-      editEl.focus();
+  // ── Body editing — TipTap WYSIWYG over the markdown source ────────────────
+  //
+  // The markdown source is fetched from the server and edited in TipTap with
+  // the tiptap-markdown extension; on save, TipTap serialises back to
+  // markdown and the exact string is written via PATCH __body + commit.
+  // No HTML-to-markdown reconstruction happens anywhere.
 
-      var toolbar = document.createElement('div');
-      toolbar.className = 'dune-ao-body-toolbar';
-      var toolbarInner = document.createElement('div');
-      toolbarInner.className = 'dune-ao-body-toolbar-inner';
-      var saveBodyBtn = document.createElement('button');
-      saveBodyBtn.textContent = 'Save';
-      saveBodyBtn.style.background = '#27ae60';
-      var cancelBodyBtn = document.createElement('button');
-      cancelBodyBtn.textContent = 'Cancel';
-      cancelBodyBtn.style.background = 'rgba(255,255,255,.15)';
-      var statusSpan = document.createElement('span');
-      statusSpan.style.cssText = 'color:#fff;font-size:11px;margin-left:4px;';
-      toolbarInner.appendChild(saveBodyBtn);
-      toolbarInner.appendChild(cancelBodyBtn);
-      toolbarInner.appendChild(statusSpan);
-      toolbar.appendChild(toolbarInner);
-      editEl.insertBefore(toolbar, editEl.firstChild);
+  function startBodyEditing(editEl) {
+    if (editEl.dataset.duneEditing) return;
+    editEl.dataset.duneEditing = '1';
 
-      function deactivate() {
-        editEl.contentEditable = 'false';
-        if (toolbar.parentNode) toolbar.parentNode.removeChild(toolbar);
-      }
+    var toolbar = document.createElement('div');
+    toolbar.className = 'dune-ao-body-toolbar';
+    var toolbarInner = document.createElement('div');
+    toolbarInner.className = 'dune-ao-body-toolbar-inner';
+    var saveBodyBtn = document.createElement('button');
+    saveBodyBtn.textContent = 'Save';
+    saveBodyBtn.style.background = '#27ae60';
+    var cancelBodyBtn = document.createElement('button');
+    cancelBodyBtn.textContent = 'Cancel';
+    cancelBodyBtn.style.background = 'rgba(255,255,255,.15)';
+    var statusSpan = document.createElement('span');
+    statusSpan.style.cssText = 'color:#fff;font-size:11px;margin-left:4px;';
+    statusSpan.textContent = 'Loading editor…';
+    toolbarInner.appendChild(saveBodyBtn);
+    toolbarInner.appendChild(cancelBodyBtn);
+    toolbarInner.appendChild(statusSpan);
+    toolbar.appendChild(toolbarInner);
 
-      saveBodyBtn.addEventListener('click', async function() {
-        saveBodyBtn.disabled = true;
-        saveBodyBtn.textContent = 'Saving…';
-        var clone = editEl.cloneNode(true);
-        var tb = clone.querySelector('.dune-ao-body-toolbar');
-        if (tb) tb.parentNode.removeChild(tb);
-        var md = htmlToMarkdown(clone.innerHTML);
-        try {
+    var editorWrap = document.createElement('div');
+    editorWrap.className = 'dune-ao-editor-wrap';
+    var editorMount = document.createElement('div');
+    editorMount.className = 'dune-tiptap-editor';
+    editorWrap.appendChild(toolbar);
+    editorWrap.appendChild(editorMount);
+
+    var editor = null;
+
+    function deactivate() {
+      if (editor) { editor.destroy(); editor = null; }
+      if (editorWrap.parentNode) editorWrap.parentNode.removeChild(editorWrap);
+      editEl.classList.remove('dune-body-editing');
+      delete editEl.dataset.duneEditing;
+    }
+
+    cancelBodyBtn.addEventListener('click', deactivate);
+
+    saveBodyBtn.addEventListener('click', async function() {
+      if (!editor) return;
+      saveBodyBtn.disabled = true;
+      saveBodyBtn.textContent = 'Saving…';
+      try {
+        if (editor.isConnected()) {
+          // Collab path: write local changes into the shared Y.js doc, give
+          // the update a moment to reach the server (fire-and-forget wire
+          // protocol, no ack), then commit — the server persists the doc.
+          editor.flushToDoc();
+          await new Promise(function(r) { setTimeout(r, 300); });
+        } else {
+          // Standalone path: write the markdown directly via the fields API.
           var pr = await fetch(window.__DUNE_FIELDS_URL__, {
             method: 'PATCH', credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fields: { __body: md } })
+            body: JSON.stringify({ fields: { __body: editor.getMarkdown() } })
           });
-          if (!pr.ok) throw new Error('patch');
-          var cr = await fetch(window.__DUNE_COMMIT_URL__, {
-            method: 'POST', credentials: 'include',
-            headers: { 'Content-Type': 'application/json' }, body: '{}'
-          });
-          if (!cr.ok) throw new Error('commit');
-          statusSpan.textContent = 'Saved ✓';
-          statusSpan.className = 'dune-status-saved';
-          setTimeout(function() { location.reload(); }, 800);
-        } catch(err) {
-          statusSpan.textContent = 'Error';
-          statusSpan.className = 'dune-status-error';
-          saveBodyBtn.disabled = false;
-          saveBodyBtn.textContent = 'Save';
+          if (!pr.ok) throw new Error('patch failed: ' + pr.status);
+        }
+        var cr = await fetch(window.__DUNE_COMMIT_URL__, {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }, body: '{}'
+        });
+        if (!cr.ok) throw new Error('commit failed: ' + cr.status);
+        statusSpan.textContent = 'Saved ✓';
+        statusSpan.className = 'dune-status-saved';
+        setTimeout(function() { location.reload(); }, 800);
+      } catch(err) {
+        statusSpan.textContent = String(err && err.message || err);
+        statusSpan.className = 'dune-status-error';
+        saveBodyBtn.disabled = false;
+        saveBodyBtn.textContent = 'Save';
+      }
+    });
+
+    // Show the toolbar immediately (loading state), then load the bundled
+    // editor module (served from /plugins/inline-edit/editor.js, built by
+    // core from this plugin's clientEntries) and the markdown source.
+    editEl.insertBefore(editorWrap, editEl.firstChild);
+    editEl.classList.add('dune-body-editing');
+
+    var peersSpan = document.createElement('span');
+    peersSpan.style.cssText = 'color:#9fd3ff;font-size:11px;margin-left:8px;';
+    toolbarInner.appendChild(peersSpan);
+
+    Promise.all([
+      import('/plugins/inline-edit/editor.js'),
+      fetch(window.__DUNE_SOURCE_URL__, { credentials: 'include' })
+        .then(function(res) {
+          if (!res.ok) throw new Error('source fetch failed: ' + res.status);
+          return res.json();
+        })
+    ]).then(function(loaded) {
+      var mod = loaded[0];
+      var data = loaded[1];
+      if (!data || typeof data.body !== 'string') throw new Error('no markdown source');
+      var wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+      var sourcePath = window.__DUNE_EDIT_SOURCE_PATH__;
+      editor = mod.mountBodyEditor({
+        element: editorMount,
+        wsUrl: wsProto + location.host + window.__DUNE_EDIT_WS_PATH__ +
+          '?path=' + encodeURIComponent(sourcePath),
+        fallbackMarkdown: data.body,
+        userName: window.__DUNE_USER_NAME__ || 'Editor',
+        onPeersChange: function(peers) {
+          peersSpan.textContent = peers.length
+            ? '\u{1F465} ' + peers.map(function(p) { return p.name; }).join(', ')
+            : '';
+        },
+        onConnection: function(connected) {
+          statusSpan.textContent = connected ? '' : 'offline';
         }
       });
-
-      var onEscKey;
-      cancelBodyBtn.addEventListener('click', function() {
-        editEl.innerHTML = originalBodyHtml;
-        editEl.removeEventListener('keydown', onEscKey);
-        deactivate();
+      return editor.ready;
+    }).then(function() {
+      statusSpan.textContent = '';
+      editorMount.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') deactivate();
       });
-
-      onEscKey = function(e) {
-        if (e.key === 'Escape') {
-          editEl.innerHTML = originalBodyHtml;
-          deactivate();
-          editEl.removeEventListener('keydown', onEscKey);
-        }
-      };
-      editEl.addEventListener('keydown', onEscKey);
+    }).catch(function(err) {
+      statusSpan.textContent = String(err && err.message || err);
+      statusSpan.className = 'dune-status-error';
+      saveBodyBtn.disabled = true;
     });
   }
 
-  function activateOverlay() {
-    document.querySelectorAll('[data-dune-field]').forEach(activateFieldElement);
-    document.querySelectorAll('[data-dune-editable="body"]').forEach(activateBodyElement);
+  function checkBodyMarker() {
+    if (!document.querySelector('[data-dune-editable="body"]')) {
+      console.info('[dune] Inline body editing unavailable: no element with data-dune-body found. Add data-dune-body to the element wrapping the rendered page body in your template.');
+    }
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', activateOverlay);
+    document.addEventListener('DOMContentLoaded', checkBodyMarker);
   } else {
-    activateOverlay();
+    checkBodyMarker();
   }
-
-  window.addEventListener('dune:edit-mode-change', function(e) {
-    if (e.detail && e.detail.mode === 'edit') activateOverlay();
-  });
 
 })();
 </script>`;

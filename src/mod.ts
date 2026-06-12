@@ -1,11 +1,18 @@
 /**
  * @dune/plugin-inline-edit
  *
- * Y.js-backed real-time inline content editing plugin for Dune CMS.
+ * Inline content editing plugin for Dune CMS.
  *
- * Provides server-side session management, WebSocket sync, Y.js document
- * persistence, admin bar injection, and the client-side component kit
- * (TipTap WYSIWYG, Preact islands) under `@dune/plugin-inline-edit/ui/editable`.
+ * Consumes the `data-dune-*` marker vocabulary (see `@dune/core/ui/editable`):
+ * the admin bar script annotates the first `<h1>` as the title field and
+ * activates editors on elements marked `data-dune-body` / `data-dune-field`.
+ * Body editing is TipTap WYSIWYG over the markdown source (lazy-loaded from
+ * esm.sh, admin-only); titles and plain fields edit in place. Server side it
+ * provides session management, WebSocket sync, and Y.js document persistence.
+ *
+ * Templates never import from this plugin — they mark editable regions with
+ * attributes (or core's typed marker components), and any editor plugin can
+ * consume them.
  *
  * ## Installation
  *
@@ -37,6 +44,13 @@ const plugin: DunePlugin = {
   version: "1.0.0",
   description: "Y.js-backed real-time inline content editing (TipTap WYSIWYG) with admin bar.",
   hooks: {},
+
+  // Browser editor bundle — built by core at startup (deno bundle, resolving
+  // this plugin's own TipTap/Y.js deps) and served at
+  // /plugins/inline-edit/editor.js. Lazy-imported by the admin bar script.
+  clientEntries: {
+    editor: import.meta.resolve("./client/editor.ts"),
+  },
 
   adminServices({ storage, history, dataDir, contentDir }) {
     return {
