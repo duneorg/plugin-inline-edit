@@ -6,12 +6,12 @@ Provides everything inline editing needs, end to end:
 
 - **Server side** — Y.js document sessions, WebSocket sync, debounced
   auto-flush to content history, commit/patch write-back to Markdown files
-- **Admin bar injection** — annotates rendered pages and injects the editing
-  toolbar for authenticated admins with edit rights (via core's
-  `transformResponse` plugin hook)
-- **Component kit** (`./ui/editable`) — Preact islands for theme authors:
-  `EditableText`, `EditableMarkdown` (TipTap WYSIWYG), `EditableImage`,
-  `EditableDate`, `EditableField`, `AdminBar`, plus a field-editor registry
+- **Admin bar injection** — injects the editing toolbar and overlay script
+  for authenticated admins with edit rights (via core's `transformResponse`
+  plugin hook)
+- **Editor client** — a TipTap WYSIWYG editor over the page's Markdown
+  source, bundled by core from this plugin's `clientEntries` and
+  lazy-imported only when a body edit starts
 
 Core defines the service interface and hosts the authenticated admin
 endpoints; this plugin supplies the implementation. Without it, Dune's
@@ -19,7 +19,7 @@ inline-edit endpoints respond 501 and no edit chrome is injected.
 
 ## Installation
 
-Requires `@dune/core` ≥ 0.18.
+Requires `@dune/core` ≥ 0.19.
 
 Add the plugin to your site's `site.yaml`:
 
@@ -28,42 +28,46 @@ plugins:
   - src: "jsr:@dune/plugin-inline-edit"
 ```
 
-And to your site's `deno.json` imports (needed for theme component imports):
+That's it — templates never import from this plugin, so no `deno.json`
+import-map entry is needed.
 
-```json
-{
-  "imports": {
-    "@dune/plugin-inline-edit": "jsr:@dune/plugin-inline-edit@^1"
-  }
-}
-```
+## How themes opt in: markers
 
-## Using the component kit in themes
+The plugin consumes the `data-dune-*` marker vocabulary from the rendered
+HTML (see `@dune/core/ui/editable`). A theme marks the element wrapping the
+rendered markdown body:
 
 ```tsx
-import { EditableText, EditableMarkdown } from "@dune/plugin-inline-edit/ui/editable";
-
-export default function Article({ page }) {
-  return (
-    <article>
-      <EditableText field="title" sourcePath={page.sourcePath}>
-        <h1>{page.title}</h1>
-      </EditableText>
-      <EditableMarkdown sourcePath={page.sourcePath}>
-        <div dangerouslySetInnerHTML={{ __html: page.html }} />
-      </EditableMarkdown>
-    </article>
-  );
-}
+<article>
+  <h1>{page.title}</h1>
+  <div data-dune-body dangerouslySetInnerHTML={{ __html: page.html }} />
+</article>
 ```
 
-All components render their children verbatim for anonymous visitors — no
-extra DOM, no JavaScript. The TipTap/Y.js editor stack is loaded lazily via
-dynamic import only when an admin activates editing.
+or uses core's typed marker components, which render exactly the same
+attributes:
 
-Themes that use no components still get click-to-edit: the admin bar's
-auto-overlay annotates the first `<h1>` and the main content container
-automatically. Opt out per element with `data-dune-no-edit`.
+```tsx
+import { EditableText, EditableMarkdown } from "@dune/core/ui/editable";
+
+<article>
+  <h1>
+    <EditableText field="title" sourcePath={page.sourcePath}>{page.title}</EditableText>
+  </h1>
+  <EditableMarkdown sourcePath={page.sourcePath}>
+    <div dangerouslySetInnerHTML={{ __html: page.html }} />
+  </EditableMarkdown>
+</article>
+```
+
+The page title (first `<h1>`) is detected automatically; opt out per element
+with `data-dune-no-edit`. The body is never guessed — without a
+`data-dune-body` marker, body editing is unavailable for that page.
+
+For admins, editing starts from a floating **✎ Edit** handle, so links inside
+editable regions stay followable. Core scrubs all markers from HTML served to
+anyone without a validated editing session — anonymous visitors get plain
+markup and load no editor code.
 
 ## License
 
