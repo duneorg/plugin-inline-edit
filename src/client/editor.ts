@@ -23,13 +23,24 @@
  */
 
 import { Editor } from "@tiptap/core";
+import { BubbleMenu } from "@tiptap/extension-bubble-menu";
+import Image from "@tiptap/extension-image";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
+import { Table } from "@tiptap/extension-table";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
+import TableRow from "@tiptap/extension-table-row";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
 import { Markdown } from "tiptap-markdown";
 import * as Y from "yjs";
 import * as syncProtocol from "y-protocols/sync";
 import * as awarenessProtocol from "y-protocols/awareness";
 import * as encoding from "lib0/encoding";
 import * as decoding from "lib0/decoding";
+import { buildBubbleMenu } from "./bubble-menu.ts";
 
 const MESSAGE_SYNC = 0;
 const MESSAGE_AWARENESS = 1;
@@ -103,6 +114,8 @@ export function mountBodyEditor(opts: MountOptions): EditorHandle {
   let destroyed = false;
   let applyingRemote = false;
   let syncTimer: number | undefined;
+  // deno-lint-ignore no-explicit-any
+  let bubbleMenuHandle: ReturnType<typeof buildBubbleMenu> | null = null;
 
   let resolveReady!: () => void;
   const ready = new Promise<void>((r) => (resolveReady = r));
@@ -118,19 +131,54 @@ export function mountBodyEditor(opts: MountOptions): EditorHandle {
 
   function createEditor(initialMarkdown: string): void {
     if (destroyed) return;
+
+    const menu = buildBubbleMenu();
+    bubbleMenuHandle = menu;
+
     editor = new Editor({
       element: opts.element,
       content: initialMarkdown,
       extensions: [
         StarterKit,
+        Link.configure({ openOnClick: false }),
+        Image,
+        Table.configure({ resizable: false }),
+        TableRow,
+        TableCell,
+        TableHeader,
+        TaskList,
+        TaskItem.configure({ nested: true }),
+        Placeholder.configure({ placeholder: "Write something…" }),
         Markdown.configure({ html: false, transformPastedText: true }),
+        BubbleMenu.configure({
+          element: menu.element,
+          tippyOptions: {
+            duration: 100,
+            placement: "top",
+            // interactive: allow clicking URL inputs without dismissing
+            interactive: true,
+          },
+          shouldShow: ({ state }) => {
+            const { from, to } = state.selection;
+            return menu.inUrlMode() || from !== to;
+          },
+        }),
       ],
       onUpdate() {
         if (applyingRemote) return;
         clearTimeout(syncTimer);
         syncTimer = setTimeout(flushToDoc, SYNC_DEBOUNCE_MS);
       },
+      onSelectionUpdate() {
+        syncActiveStates();
+      },
+      onTransaction() {
+        syncActiveStates();
+      },
     });
+
+    const { syncActiveStates } = menu.wire(editor);
+
     editor.commands.focus();
     markReady();
   }
@@ -267,6 +315,8 @@ export function mountBodyEditor(opts: MountOptions): EditorHandle {
       } catch { /* already closed */ }
       editor?.destroy();
       editor = null;
+      bubbleMenuHandle?.destroy();
+      bubbleMenuHandle = null;
       doc.destroy();
     },
   };

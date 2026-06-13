@@ -152,6 +152,36 @@ export function buildAdminBarHtml(opts: {
   }
   .dune-tiptap-editor .ProseMirror { outline: none; }
 
+  /* Bubble formatting toolbar (shown on text selection while body editing) */
+  .dune-bubble-menu {
+    display: flex; flex-direction: column; gap: 0;
+    filter: drop-shadow(0 3px 10px rgba(0,0,0,.45));
+  }
+  .dbm-bar, .dbm-url-view {
+    display: flex; align-items: center; gap: 2px;
+    background: #1a1a2e; border-radius: 6px; padding: 4px 6px;
+    font: 12px/1 system-ui, sans-serif;
+  }
+  .dbm-btn {
+    background: transparent; border: none; border-radius: 3px;
+    color: #fff; cursor: pointer; font-size: 12px;
+    padding: 4px 6px; line-height: 1; min-width: 22px; text-align: center;
+  }
+  .dbm-btn:hover { background: rgba(255,255,255,.15); }
+  .dbm-btn.is-active { background: #3498db; }
+  .dbm-sep {
+    width: 1px; height: 14px; background: rgba(255,255,255,.2);
+    margin: 0 3px; flex-shrink: 0; align-self: center;
+  }
+  .dbm-url-label { color: rgba(255,255,255,.6); font-size: 11px; margin-right: 2px; white-space: nowrap; }
+  .dbm-url-input {
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.3);
+    border-radius: 3px; color: #fff; font-size: 12px;
+    padding: 3px 7px; width: 200px; outline: none;
+  }
+  .dbm-url-input::placeholder { color: rgba(255,255,255,.35); }
+  .dbm-url-input:focus { border-color: #3498db; }
+
   /* Floating sticky toolbar shown while body editing is active */
   .dune-ao-body-toolbar {
     height: 0; overflow: visible; position: sticky; top: 50px;

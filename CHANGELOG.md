@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.1.0] — 2026-06-13
+
+### Added
+
+- **Bubble formatting toolbar** — selecting text while body editing shows a floating toolbar above the selection with buttons for Bold, Italic, Strikethrough, Inline code, H1/H2/H3, Bullet list, Ordered list, Task list, Blockquote, Code block, Link, Image, and Table. Buttons reflect the active mark/node at the cursor. Link and Image switch the toolbar to a URL-input sub-view that stays open while the user types (via tippy's `interactive` option); confirming sets the mark/inserts the node and returns to the formatting bar.
+- **Link support** — `@tiptap/extension-link` preserves `[text](url)` markdown syntax through edit sessions. `openOnClick: false` lets links be selected and edited rather than followed.
+- **Image support** — `@tiptap/extension-image` preserves `![alt](url)` image syntax. Images can be inserted via the toolbar URL-input flow.
+- **Table support** — `@tiptap/extension-table` (+ row/cell/header) adds markdown GFM table editing. The toolbar inserts a 3×3 table with a header row; existing tables in markdown round-trip losslessly.
+- **Task list support** — `@tiptap/extension-task-list` + `task-item` adds GFM `- [ ] task` / `- [x] done` syntax with nested task support.
+- **Placeholder** — `@tiptap/extension-placeholder` shows a subtle hint in an empty editor.
+
+---
+
 ## [2.0.0] — 2026-06-12
 
 Requires `@dune/core` ≥ 0.19.
