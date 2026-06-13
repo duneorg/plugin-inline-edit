@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.2] — 2026-06-13
+
+### Fixed
+
+- **Internal version field corrected** — `mod.ts` now reports `"2.1.2"` matching the package version, so the bundle cache key (`inline-edit-2.1.2-editor-*.js`) will always correspond to the correct editor build.
+
+---
+
 ## [2.1.1] — 2026-06-13
 
 ### Fixed
