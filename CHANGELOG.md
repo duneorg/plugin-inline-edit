@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.1] — 2026-06-13
+
+### Fixed
+
+- **Bundle cache never invalidated** — the plugin's internal `version` field in `mod.ts` was still `"1.0.0"` (never updated since the initial release), so Dune's client-bundle cache always found a stale hit and served the 1.0.0 editor bundle regardless of the installed JSR version. The internal version now matches the package version and will be kept in sync going forward.
+
+---
+
 ## [2.1.0] — 2026-06-13
 
 ### Added
