@@ -77,6 +77,12 @@ export interface EditorHandle {
   getMarkdown(): string;
   /** Immediately write pending local changes into the shared document. */
   flushToDoc(): void;
+  /** Insert an image at the current cursor position. */
+  insertImage(url: string): void;
+  /** Insert a 3×3 table with a header row at the current cursor position. */
+  insertTable(): void;
+  /** Insert a horizontal rule at the current cursor position. */
+  insertHr(): void;
   /** Destroy the editor and close the connection. */
   destroy(): void;
 }
@@ -306,6 +312,15 @@ export function mountBodyEditor(opts: MountOptions): EditorHandle {
     isConnected: () => connected,
     getMarkdown,
     flushToDoc,
+    insertImage(url: string) {
+      editor?.chain().focus().setImage({ src: url }).run();
+    },
+    insertTable() {
+      editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    },
+    insertHr() {
+      editor?.chain().focus().setHorizontalRule().run();
+    },
     destroy() {
       destroyed = true;
       clearTimeout(syncTimer);

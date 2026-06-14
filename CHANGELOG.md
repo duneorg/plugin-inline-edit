@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.3] — 2026-06-14
+
+### Fixed
+
+- **Editor bundle cache-busting** — the admin bar's dynamic `import()` of the editor bundle now appends `?v={pluginVersion}` to the URL. This ensures the browser fetches a fresh copy whenever the plugin is upgraded, rather than serving a stale `max-age=3600` cached bundle.
+
+---
+
 ## [2.1.2] — 2026-06-13
 
 ### Fixed

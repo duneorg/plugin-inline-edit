@@ -74,8 +74,6 @@ export function buildBubbleMenu(): BubbleMenu {
   const codeBlockBtn = btn("{}", "Code block");
 
   const linkBtn = btn("&#128279;", "Link");
-  const imgBtn = btn("&#128444;", "Image");
-  const tableBtn = btn("&#8862;", "Insert table");
 
   bar.append(
     boldBtn, italicBtn, strikeBtn, codeBtn,
@@ -84,7 +82,7 @@ export function buildBubbleMenu(): BubbleMenu {
     sep(),
     ulBtn, olBtn, taskBtn, quoteBtn, codeBlockBtn,
     sep(),
-    linkBtn, imgBtn, tableBtn,
+    linkBtn,
   );
 
   // ── URL input sub-view (shared for Link and Image) ──────────────────────────
@@ -108,15 +106,14 @@ export function buildBubbleMenu(): BubbleMenu {
   el.append(bar, urlView);
 
   // ── URL mode state ──────────────────────────────────────────────────────────
-  type UrlMode = "link" | "image" | null;
-  let urlMode: UrlMode = null;
+  let urlMode: "link" | null = null;
 
-  function showUrlView(mode: "link" | "image", existingValue: string): void {
-    urlMode = mode;
+  function showUrlView(existingValue: string): void {
+    urlMode = "link";
     bar.style.display = "none";
     urlView.style.display = "flex";
-    urlLabel.textContent = mode === "link" ? "URL:" : "Image:";
-    urlInput.placeholder = mode === "link" ? "https://…" : "Image URL…";
+    urlLabel.textContent = "URL:";
+    urlInput.placeholder = "https://…";
     urlInput.value = existingValue;
     urlInput.focus();
     urlInput.select();
@@ -133,13 +130,7 @@ export function buildBubbleMenu(): BubbleMenu {
   function wire(editor: Editor): { syncActiveStates: () => void } {
     function applyUrl(): void {
       const url = urlInput.value.trim();
-      if (url) {
-        if (urlMode === "link") {
-          editor.chain().focus().setLink({ href: url }).run();
-        } else if (urlMode === "image") {
-          editor.chain().focus().setImage({ src: url }).run();
-        }
-      }
+      if (url) editor.chain().focus().setLink({ href: url }).run();
       hideUrlView();
     }
 
@@ -157,17 +148,9 @@ export function buildBubbleMenu(): BubbleMenu {
     quoteBtn.addEventListener("click", () => editor.chain().focus().toggleBlockquote().run());
     codeBlockBtn.addEventListener("click", () => editor.chain().focus().toggleCodeBlock().run());
 
-    // Link / image — switch to URL input view
+    // Link — switch to URL input view
     linkBtn.addEventListener("click", () => {
-      showUrlView("link", editor.getAttributes("link").href ?? "");
-    });
-    imgBtn.addEventListener("click", () => {
-      showUrlView("image", "");
-    });
-
-    // Table — insert 3×3 with header row
-    tableBtn.addEventListener("click", () => {
-      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+      showUrlView(editor.getAttributes("link").href ?? "");
     });
 
     // URL view buttons

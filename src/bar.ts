@@ -86,8 +86,9 @@ export function buildAdminBarHtml(opts: {
   pageTitle: string | null;
   adminPrefix: string;
   userName: string;
+  pluginVersion: string;
 }): string {
-  const { sourcePath, pageTitle, adminPrefix, userName } = opts;
+  const { sourcePath, pageTitle, adminPrefix, userName, pluginVersion } = opts;
   const encodedPath = encodeURIComponent(sourcePath);
   const adminPageUrl = `${adminPrefix}/pages/${encodedPath}`;
   const commitUrl = `${adminPrefix}/api/content/${encodedPath}/commit`;
@@ -378,6 +379,22 @@ export function buildAdminBarHtml(opts: {
     toolbar.className = 'dune-ao-body-toolbar';
     var toolbarInner = document.createElement('div');
     toolbarInner.className = 'dune-ao-body-toolbar-inner';
+
+    // Insert buttons — wired to the editor after it loads
+    function mkInsertBtn(label, title) {
+      var b = document.createElement('button');
+      b.innerHTML = label;
+      b.title = title;
+      b.disabled = true;
+      b.style.background = 'rgba(255,255,255,.12)';
+      return b;
+    }
+    var insertImgBtn = mkInsertBtn('&#128444;', 'Insert image');
+    var insertTableBtn = mkInsertBtn('&#8862;', 'Insert table');
+    var insertHrBtn = mkInsertBtn('&#8212;', 'Insert horizontal rule');
+    var insertSep = document.createElement('span');
+    insertSep.style.cssText = 'width:1px;height:14px;background:rgba(255,255,255,.2);margin:0 2px;flex-shrink:0;';
+
     var saveBodyBtn = document.createElement('button');
     saveBodyBtn.textContent = 'Save';
     saveBodyBtn.style.background = '#27ae60';
@@ -387,6 +404,10 @@ export function buildAdminBarHtml(opts: {
     var statusSpan = document.createElement('span');
     statusSpan.style.cssText = 'color:#fff;font-size:11px;margin-left:4px;';
     statusSpan.textContent = 'Loading editor…';
+    toolbarInner.appendChild(insertImgBtn);
+    toolbarInner.appendChild(insertTableBtn);
+    toolbarInner.appendChild(insertHrBtn);
+    toolbarInner.appendChild(insertSep);
     toolbarInner.appendChild(saveBodyBtn);
     toolbarInner.appendChild(cancelBodyBtn);
     toolbarInner.appendChild(statusSpan);
@@ -457,7 +478,7 @@ export function buildAdminBarHtml(opts: {
     toolbarInner.appendChild(peersSpan);
 
     Promise.all([
-      import('/plugins/inline-edit/editor.js'),
+      import('/plugins/inline-edit/editor.js?v=${pluginVersion}'),
       fetch(window.__DUNE_SOURCE_URL__, { credentials: 'include' })
         .then(function(res) {
           if (!res.ok) throw new Error('source fetch failed: ' + res.status);
@@ -489,6 +510,21 @@ export function buildAdminBarHtml(opts: {
       statusSpan.textContent = '';
       editorMount.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') deactivate();
+      });
+      // Enable and wire insert buttons now that the editor is ready
+      insertImgBtn.disabled = false;
+      insertTableBtn.disabled = false;
+      insertHrBtn.disabled = false;
+      insertImgBtn.addEventListener('click', function() {
+        if (!editor) return;
+        var url = window.prompt('Image URL:');
+        if (url && url.trim()) editor.insertImage(url.trim());
+      });
+      insertTableBtn.addEventListener('click', function() {
+        if (editor) editor.insertTable();
+      });
+      insertHrBtn.addEventListener('click', function() {
+        if (editor) editor.insertHr();
       });
     }).catch(function(err) {
       statusSpan.textContent = String(err && err.message || err);
@@ -526,6 +562,7 @@ export async function injectAdminBar(
     pageTitle: string | null;
     adminPrefix: string;
     userName: string;
+    pluginVersion: string;
   },
 ): Promise<Response> {
   if (!response.body) return response;
