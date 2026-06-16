@@ -41,7 +41,7 @@ import { injectAdminBar } from "./bar.ts";
 
 const plugin: DunePlugin = {
   name: "inline-edit",
-  version: "2.1.3",
+  version: "2.1.4",
   description: "Y.js-backed real-time inline content editing (TipTap WYSIWYG) with admin bar.",
   hooks: {},
 

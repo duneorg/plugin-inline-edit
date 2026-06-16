@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.1.4] — 2026-06-16
+
+### Fixed
+
+- **Collaborative editing was non-functional** — the WebSocket sync handshake passed an invalid (genuinely empty) state vector into Y.js's update encoder, which threw on every connection attempt and on every broadcast of an edit to other connected editors. Inline editing's local UI (TipTap, bubble menu, toolbar) appeared to work normally because none of it depends on the WebSocket layer, but the real-time Y.js sync and persistence path was silently broken. Connections now complete the sync handshake correctly.
+- **Idle-session GC leaked a timer per evicted document** — each editing session's `Awareness` instance starts its own cleanup interval that was never stopped when the session was garbage-collected after 5 minutes of inactivity. Long-running servers editing many documents over time would accumulate one leaked timer per evicted session. The interval is now stopped alongside the session's Y.Doc.
+- Added test coverage (`tests/`) for the persistence path: frontmatter/body splicing, commit and field-patch flows against real storage and history, Y.js draft load/persist/delete round-trips, and end-to-end WebSocket sync tests that exercise the real wire protocol — these caught both fixes above.
+
+---
+
 ## [2.1.3] — 2026-06-14
 
 ### Fixed

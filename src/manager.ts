@@ -100,7 +100,7 @@ export function createInlineEditManager(
     if (_gcHandle) return;
     _gcHandle = setInterval(() => {
       const now = Date.now();
-      for (const [path, { session, doc }] of sessions) {
+      for (const [path, { session, doc, awareness }] of sessions) {
         if (
           session.clients.size === 0 &&
           now - session.lastActivity > SESSION_IDLE_TTL_MS
@@ -110,6 +110,11 @@ export function createInlineEditManager(
           if (session.flushTimer !== undefined) {
             clearTimeout(session.flushTimer);
           }
+          // Awareness starts its own outdated-state setInterval on
+          // construction; without destroying it here, every evicted
+          // document session leaks that timer for the rest of the
+          // process's lifetime.
+          awareness.destroy();
           doc.destroy();
           sessions.delete(path);
         }

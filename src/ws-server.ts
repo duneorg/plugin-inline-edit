@@ -80,8 +80,15 @@ function encodeSyncStep1(doc: Y.Doc): Uint8Array {
 /**
  * Encode a sync step 2 message (server → client).
  * Contains all updates the client hasn't seen yet.
+ *
+ * `stateVector` must be an actual encoded Y.js state vector (at minimum a
+ * single `0x00` byte for "no entries") — a genuinely empty `Uint8Array(0)`
+ * is not valid input and makes `Y.encodeStateAsUpdate` throw "Unexpected
+ * end of array" while decoding it. Omit the argument to diff against an
+ * empty state vector and send the full document, which is what every call
+ * site here wants (a fresh connection or an explicit full-state request).
  */
-function encodeSyncStep2(doc: Y.Doc, stateVector: Uint8Array): Uint8Array {
+function encodeSyncStep2(doc: Y.Doc, stateVector?: Uint8Array): Uint8Array {
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, MESSAGE_SYNC);
   syncProtocol.writeSyncStep2(encoder, doc, stateVector);
@@ -145,7 +152,7 @@ export function connectClient(opts: {
   send(socket, encodeSyncStep1(doc));
 
   // Also send full sync step 2 immediately (client may be fresh).
-  send(socket, encodeSyncStep2(doc, new Uint8Array()));
+  send(socket, encodeSyncStep2(doc));
 
   // Send current awareness state to the new client.
   const awarenessClients = Array.from(awareness.getStates().keys());
@@ -202,7 +209,7 @@ export function connectClient(opts: {
           // Re-encode the raw update for peer broadcast.
           const updateEncoder = encoding.createEncoder();
           encoding.writeVarUint(updateEncoder, MESSAGE_SYNC);
-          syncProtocol.writeSyncStep2(updateEncoder, doc, new Uint8Array());
+          syncProtocol.writeSyncStep2(updateEncoder, doc);
           broadcast(session, encoding.toUint8Array(updateEncoder), client.clientId);
 
           // Schedule auto-flush.
