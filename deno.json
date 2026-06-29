@@ -1,6 +1,7 @@
 {
   "name": "@dune/plugin-inline-edit",
   "version": "2.1.4",
+  "description": "Inline content editing for Dune CMS sites — dune-plugin",
   "license": "MIT",
   "exports": {
     ".": "./src/mod.ts"
