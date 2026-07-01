@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.5] — 2026-07-01
+
+### Changed
+
+- **WebSocket path updated to `/api/inline-edit/ws`** — the inline-edit admin bar now connects to the endpoint registered by `@dune/core` directly rather than deriving it from the admin prefix. Requires `@dune/core ^0.25`.
+
+---
+
 ## [2.1.4] — 2026-06-16
 
 ### Fixed
