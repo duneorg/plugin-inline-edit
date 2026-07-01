@@ -219,7 +219,7 @@ export function buildAdminBarHtml(opts: {
   window.__DUNE_FIELDS_URL__ = ${jsonStr(fieldsUrl)};
   window.__DUNE_SOURCE_URL__ = ${jsonStr(commitUrl.replace("/commit", "/source"))};
   window.__DUNE_USER_NAME__ = ${jsonStr(userName)};
-  window.__DUNE_EDIT_WS_PATH__ = ${jsonStr(`${adminPrefix}/collab/edit-ws`)};
+  window.__DUNE_EDIT_WS_PATH__ = "/api/inline-edit/ws";
 
   var editMode = true;
   document.body.classList.add('dune-edit-mode');
