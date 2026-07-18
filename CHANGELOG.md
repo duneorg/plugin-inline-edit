@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.1.6] — 2026-07-18
+
+### Fixed
+
+- **The `@dune/core` dependency range was stale (`^0.19`)**, unrelated to
+  the actual `@dune/core@^0.25` this package has required since 2.1.5 —
+  a site on a newer core loaded a second, older copy of `@dune/core` just
+  for this plugin. Bumped to a bounded per-minor pin, `jsr:@dune/core@0.31`
+  (auto-tracks patch releases within that minor), so Deno unifies it with
+  the host site's pinned core version. An unbounded range (`@0`, any 0.x)
+  was tried first and reverted: JSR validates a package's `jsr:` subpath
+  imports against the *oldest* version satisfying the declared range, not
+  the newest, so an open floor resolves to the earliest `@dune/core` ever
+  published and fails publish for any subpath that postdates it (this
+  package's `@dune/core/inline-edit` didn't exist until core 0.16.3).
+- **`minimumDependencyAge` now excludes `jsr:@dune/core`** from Deno's
+  24-hour freshness gate (default since Deno 2.9) — without this, a
+  version bump immediately after a `@dune/core` release fails publish
+  since the new core version is "too fresh." `@dune/core` is a same-org
+  first-party dependency published by the same release process, so the
+  supply-chain risk that gate protects against doesn't apply here. Scoped
+  to just this one package so third-party npm dependencies keep the full
+  24-hour window.
+
 ## [2.1.5] — 2026-07-01
 
 ### Changed

@@ -1,7 +1,11 @@
 {
   "name": "@dune/plugin-inline-edit",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "license": "MIT",
+  "minimumDependencyAge": {
+    "age": "P1D",
+    "exclude": ["jsr:@dune/core"]
+  },
   "exports": {
     ".": "./src/mod.ts"
   },
@@ -9,7 +13,7 @@
     "test": "deno test -A --config=deno.dev.json tests/"
   },
   "imports": {
-    "@dune/core": "jsr:@dune/core@0",
+    "@dune/core": "jsr:@dune/core@0.31",
     "@std/assert": "jsr:@std/assert@^1",
     "@std/path": "jsr:@std/path@^1",
     "@std/yaml": "jsr:@std/yaml@^1",
