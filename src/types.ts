@@ -6,7 +6,7 @@
  * `DocumentPresence`) is defined by `@dune/core/inline-edit`.
  */
 
-import type { HistoryEngine, StorageAdapter } from "@dune/core";
+import type { HistoryEngine, HookRegistry, StorageAdapter } from "@dune/core";
 
 // ── Session ───────────────────────────────────────────────────────────────────
 
@@ -46,4 +46,11 @@ export interface InlineEditManagerOptions {
   contentDir: string;
   /** Auto-flush after this many ms of inactivity (default 120_000 = 2 min). */
   autoFlushMs?: number;
+  /**
+   * Fires `onPageUpdate` after each commit/patch, matching plugin-admin's
+   * page-save routes. Optional so callers on a dune-core version that
+   * predates AdminServicesContext.hooks still work (edits still save —
+   * they just don't fire the hook).
+   */
+  hooks?: HookRegistry;
 }

@@ -14,6 +14,7 @@ import * as Y from "yjs";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import type { StorageAdapter } from "@dune/core";
 import type { HistoryEngine } from "@dune/core";
+import type { HookRegistry } from "@dune/core";
 import { getDocBody } from "./ydoc-manager.ts";
 
 // ── File splitting helpers ─────────────────────────────────────────────────────
@@ -71,8 +72,16 @@ export async function commitDoc(opts: {
   storage: StorageAdapter;
   history: HistoryEngine;
   contentDir: string;
+  /**
+   * Fires `onPageUpdate` after a successful write, matching plugin-admin's
+   * page-save route — without this, plugins that react to that hook (e.g.
+   * regenerating content derived from the edited page) never see inline
+   * edits, only edits made through the admin CRUD routes. Optional so
+   * callers that predate AdminServicesContext.hooks still work.
+   */
+  hooks?: HookRegistry;
 }): Promise<void> {
-  const { doc, sourcePath, author, storage, history, contentDir } = opts;
+  const { doc, sourcePath, author, storage, history, contentDir, hooks } = opts;
   const body = getDocBody(doc);
 
   const filePath = `${contentDir}/${sourcePath}`;
@@ -97,6 +106,8 @@ export async function commitDoc(opts: {
 
   // Write to disk.
   await storage.write(filePath, committed);
+
+  hooks?.fire("onPageUpdate", { sourcePath }).catch(() => {});
 }
 
 // ── Field patch ────────────────────────────────────────────────────────────────
@@ -117,8 +128,10 @@ export async function patchFrontmatterFields(opts: {
   storage: StorageAdapter;
   history: HistoryEngine;
   contentDir: string;
+  /** Fires `onPageUpdate` after a successful write — see commitDoc(). */
+  hooks?: HookRegistry;
 }): Promise<void> {
-  const { sourcePath, author, storage, history, contentDir } = opts;
+  const { sourcePath, author, storage, history, contentDir, hooks } = opts;
   const fields = { ...opts.fields };
 
   const filePath = `${contentDir}/${sourcePath}`;
@@ -156,4 +169,6 @@ export async function patchFrontmatterFields(opts: {
   });
 
   await storage.write(filePath, patched);
+
+  hooks?.fire("onPageUpdate", { sourcePath }).catch(() => {});
 }
