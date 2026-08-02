@@ -52,9 +52,9 @@ const plugin: DunePlugin = {
     editor: import.meta.resolve("./client/editor.ts"),
   },
 
-  adminServices({ storage, history, dataDir, contentDir }) {
+  adminServices({ storage, history, dataDir, contentDir, hooks }) {
     return {
-      inlineEdit: createInlineEditManager({ storage, history, dataDir, contentDir }),
+      inlineEdit: createInlineEditManager({ storage, history, dataDir, contentDir, hooks }),
     };
   },
 

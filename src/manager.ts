@@ -37,7 +37,7 @@ let _gcHandle: ReturnType<typeof setInterval> | undefined;
 export function createInlineEditManager(
   opts: InlineEditManagerOptions,
 ): InlineEditManager {
-  const { storage, history, dataDir, contentDir } = opts;
+  const { storage, history, dataDir, contentDir, hooks } = opts;
   const autoFlushMs = opts.autoFlushMs ?? 120_000;
 
   /**
@@ -207,6 +207,7 @@ export function createInlineEditManager(
         storage,
         history,
         contentDir,
+        hooks,
       });
 
       // Remove the Y.js binary after a successful commit — the `.md` file is
@@ -226,6 +227,7 @@ export function createInlineEditManager(
         storage,
         history,
         contentDir,
+        hooks,
       });
     },
 

@@ -6,6 +6,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import * as Y from "yjs";
 import { createHistoryEngine, createStorage } from "@dune/core";
+import type { HookRegistry } from "@dune/core";
 import {
   commitDoc,
   patchFrontmatterFields,
@@ -13,6 +14,18 @@ import {
   spliceFrontmatter,
   splitFile,
 } from "../src/commit.ts";
+
+/** Minimal HookRegistry test double — only `.fire()` is used by commit.ts. */
+function makeFakeHooks() {
+  const fired: { event: string; data: unknown }[] = [];
+  const hooks = {
+    fire: (event: string, data: unknown) => {
+      fired.push({ event, data });
+      return Promise.resolve(data);
+    },
+  } as unknown as HookRegistry;
+  return { hooks, fired };
+}
 
 // ── splitFile / spliceBody / spliceFrontmatter (pure) ───────────────────────
 
@@ -140,6 +153,52 @@ Deno.test("commitDoc: works for a brand-new draft with no existing file", async 
   Deno.removeSync(rootDir, { recursive: true });
 });
 
+Deno.test("commitDoc: fires onPageUpdate with the sourcePath when hooks is provided", async () => {
+  const { rootDir, storage, history, contentDir } = makeEnv();
+  const sourcePath = "01.page/default.md";
+  await storage.write(`${contentDir}/${sourcePath}`, "---\ntitle: Page\n---\nOriginal.\n");
+  const { hooks, fired } = makeFakeHooks();
+
+  const doc = new Y.Doc();
+  doc.transact(() => doc.getText("body").insert(0, "Edited."));
+  await commitDoc({ doc, sourcePath, author: "alice", storage, history, contentDir, hooks });
+
+  assertEquals(fired, [{ event: "onPageUpdate", data: { sourcePath } }]);
+  Deno.removeSync(rootDir, { recursive: true });
+});
+
+Deno.test("commitDoc: omitting hooks still commits normally (no hook fired, no throw)", async () => {
+  const { rootDir, storage, history, contentDir } = makeEnv();
+  const sourcePath = "01.page/default.md";
+  await storage.write(`${contentDir}/${sourcePath}`, "---\ntitle: Page\n---\nOriginal.\n");
+
+  const doc = new Y.Doc();
+  doc.transact(() => doc.getText("body").insert(0, "Edited."));
+  await commitDoc({ doc, sourcePath, author: "alice", storage, history, contentDir });
+
+  const onDisk = await storage.readText(`${contentDir}/${sourcePath}`);
+  assertEquals(onDisk, "---\ntitle: Page\n---\nEdited.");
+  Deno.removeSync(rootDir, { recursive: true });
+});
+
+Deno.test("commitDoc: a failing hook handler doesn't fail the commit", async () => {
+  const { rootDir, storage, history, contentDir } = makeEnv();
+  const sourcePath = "01.page/default.md";
+  await storage.write(`${contentDir}/${sourcePath}`, "---\ntitle: Page\n---\nOriginal.\n");
+  const hooks = {
+    fire: () => Promise.reject(new Error("handler blew up")),
+  } as unknown as HookRegistry;
+
+  const doc = new Y.Doc();
+  doc.transact(() => doc.getText("body").insert(0, "Edited."));
+  // Must not throw despite the rejected hook promise (fire-and-forget).
+  await commitDoc({ doc, sourcePath, author: "alice", storage, history, contentDir, hooks });
+
+  const onDisk = await storage.readText(`${contentDir}/${sourcePath}`);
+  assertEquals(onDisk, "---\ntitle: Page\n---\nEdited.");
+  Deno.removeSync(rootDir, { recursive: true });
+});
+
 // ── patchFrontmatterFields (integration) ─────────────────────────────────────
 
 Deno.test("patchFrontmatterFields: patches a field without touching the body", async () => {
@@ -190,5 +249,25 @@ Deno.test("patchFrontmatterFields: __body replaces the body via the auto-overlay
 
   const latest = await history.getLatest(sourcePath);
   assertEquals(latest!.message, "Body update (auto-overlay)");
+  Deno.removeSync(rootDir, { recursive: true });
+});
+
+Deno.test("patchFrontmatterFields: fires onPageUpdate with the sourcePath when hooks is provided", async () => {
+  const { rootDir, storage, history, contentDir } = makeEnv();
+  const sourcePath = "01.page/default.md";
+  await storage.write(`${contentDir}/${sourcePath}`, "---\ntitle: Old\n---\nBody.\n");
+  const { hooks, fired } = makeFakeHooks();
+
+  await patchFrontmatterFields({
+    sourcePath,
+    fields: { title: "New" },
+    author: "carol",
+    storage,
+    history,
+    contentDir,
+    hooks,
+  });
+
+  assertEquals(fired, [{ event: "onPageUpdate", data: { sourcePath } }]);
   Deno.removeSync(rootDir, { recursive: true });
 });
