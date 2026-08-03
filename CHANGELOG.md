@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.1.7] — 2026-08-04
+
+### Fixed
+
+- **`commitDoc()`/`patchFrontmatterFields()` never fired `onPageUpdate`.**
+  They wrote straight to storage via the history engine, with no hook
+  firing anywhere in the path — unlike `@dune/plugin-admin`'s own
+  page-save route, which fires `onPageUpdate` right after its write. Any
+  plugin relying on that hook (e.g. to regenerate content derived from the
+  edited page) silently never saw edits made through inline-edit, only
+  edits made through the admin CRUD routes.
+  Threads an optional `hooks: HookRegistry` through
+  `InlineEditManagerOptions` → `createInlineEditManager` →
+  `commitDoc`/`patchFrontmatterFields`, sourced from `@dune/core`'s
+  `AdminServicesContext` (requires `@dune/core` ≥0.31.5, which added
+  `AdminServicesContext.hooks`). Optional and fire-and-forget
+  (`.catch(() => {})`, matching `plugin-admin`'s own call site) so older
+  `@dune/core` versions without `AdminServicesContext.hooks`, and any hook
+  handler that throws, never affect the save itself.
+- **`@dune/core` pin narrowed to `^0.31.6`.** `AdminServicesContext.hooks`
+  doesn't exist before `0.31.5` — the previous bare `@0.31` pin's floor
+  would type-check against a core version that predates this release's
+  own dependency, the same JSR-oldest-version-in-range issue hit on
+  previous releases.
+
 ## [2.1.6] — 2026-07-18
 
 ### Fixed
