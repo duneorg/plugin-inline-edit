@@ -148,7 +148,13 @@ export function buildAdminBarHtml(opts: {
   /* Body editing: hide the rendered content while the TipTap editor is mounted */
   .dune-body-editing > :not(.dune-ao-editor-wrap) { display: none !important; }
   .dune-tiptap-editor {
-    min-height: 200px; padding: 12px; background: #fff;
+    /* .dune-ao-body-toolbar is a zero-height sticky container (so it
+       doesn't push the page's own layout around while floating) — nothing
+       reserves the space its visible pill actually occupies, so without
+       this margin the toolbar renders directly on top of the editor's own
+       first line. 36px = the toolbar's measured rendered height (~34px)
+       plus a couple px of breathing room. */
+    margin-top: 36px; min-height: 200px; padding: 12px; background: #fff;
     border: 1px solid #3498db; border-radius: 4px;
   }
   .dune-tiptap-editor .ProseMirror { outline: none; }
