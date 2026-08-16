@@ -1,6 +1,6 @@
 {
   "name": "@dune/plugin-inline-edit",
-  "version": "2.1.7",
+  "version": "2.1.8",
   "license": "MIT",
   "minimumDependencyAge": {
     "age": "P1D",

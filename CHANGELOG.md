@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.1.8] — 2026-08-16
+
+### Fixed
+
+- **The body-editing toolbar overlapped the editor's first line of
+  content.** `.dune-ao-body-toolbar` is a deliberately zero-height
+  sticky container so it floats without displacing page layout, but
+  nothing reserved the space its visible pill actually renders in.
+  Added `margin-top` to the editor to clear it.
+- **`deno check` failed on `src/client/editor.ts`** — `syncTimer`'s type
+  didn't match what `setTimeout` returns in this lib configuration. No
+  runtime behavior change.
+
 ## [2.1.7] — 2026-08-04
 
 ### Fixed
