@@ -58,7 +58,7 @@ const plugin: DunePlugin = {
     };
   },
 
-  async transformResponse({ req, response, auth, page, adminPrefix }) {
+  async transformResponse({ req, response, auth, page, adminPrefix, plugins }) {
     // Only inject for authenticated admins with edit rights on content pages.
     if (!auth || !auth.hasPermission("pages.update")) return response;
     if (!page) return response;
@@ -71,12 +71,18 @@ const plugin: DunePlugin = {
     const url = new URL(req.url);
     if (url.pathname.startsWith(adminPrefix)) return response;
 
+    // Collect adminBarActions from every plugin (including this one — it
+    // declares none) — see DunePlugin.adminBarActions for why this bar
+    // renders other plugins' buttons without knowing what they do.
+    const actions = plugins.flatMap((p) => p.adminBarActions?.({ page, adminPrefix }) ?? []);
+
     return injectAdminBar(response, {
       sourcePath: page.sourcePath,
       pageTitle: page.title,
       adminPrefix,
       userName: auth.username,
       pluginVersion: plugin.version,
+      actions,
     });
   },
 };

@@ -22,6 +22,8 @@
  *      lazy-imported only when a body edit starts, so browsing costs nothing.
  */
 
+import type { AdminBarAction } from "@dune/core/plugins";
+
 // ── HTML annotation pass ──────────────────────────────────────────────────────
 
 /**
@@ -79,6 +81,25 @@ function jsonStr(s: string): string {
   return JSON.stringify(s).replace(/</g, "\\u003c").replace(/>/g, "\\u003e");
 }
 
+/**
+ * Render buttons contributed by other plugins via `DunePlugin.adminBarActions`
+ * (see mod.ts, which collects them and passes the result in here). `label`/
+ * `icon`/`href` are escaped as untrusted display content; `onClick` is not —
+ * see {@link AdminBarAction.onClick}'s own doc for why that's the right call.
+ */
+function renderAdminBarActions(actions: AdminBarAction[]): string {
+  return actions.map((a) => {
+    const label = `${a.icon ? escapeHtml(a.icon) + " " : ""}${escapeHtml(a.label)}`;
+    if (a.href) {
+      return `<a id="${escapeAttr(a.id)}" class="dune-ab-action" href="${escapeAttr(a.href)}">${label}</a>`;
+    }
+    if (a.onClick) {
+      return `<button id="${escapeAttr(a.id)}" class="dune-ab-action" onclick="${escapeAttr(a.onClick)}">${label}</button>`;
+    }
+    return "";
+  }).join("");
+}
+
 // ── Admin bar HTML + auto-overlay script ─────────────────────────────────────
 
 export function buildAdminBarHtml(opts: {
@@ -87,8 +108,10 @@ export function buildAdminBarHtml(opts: {
   adminPrefix: string;
   userName: string;
   pluginVersion: string;
+  /** Buttons contributed by other plugins via `DunePlugin.adminBarActions` — see mod.ts. */
+  actions?: AdminBarAction[];
 }): string {
-  const { sourcePath, pageTitle, adminPrefix, userName, pluginVersion } = opts;
+  const { sourcePath, pageTitle, adminPrefix, userName, pluginVersion, actions = [] } = opts;
   const encodedPath = encodeURIComponent(sourcePath);
   const adminPageUrl = `${adminPrefix}/pages/${encodedPath}`;
   const commitUrl = `${adminPrefix}/api/content/${encodedPath}/commit`;
@@ -116,6 +139,12 @@ export function buildAdminBarHtml(opts: {
   #dune-ab-edit-toggle { background: #3498db; color: #fff; }
   #dune-ab-save { background: #27ae60; color: #fff; }
   #dune-ab-save:disabled { opacity: .6; cursor: default; }
+  #dune-admin-bar .dune-ab-action {
+    background: rgba(255,255,255,.12); color: #fff; text-decoration: none;
+    border: none; border-radius: 4px; padding: 3px 12px;
+    font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  #dune-admin-bar .dune-ab-action:hover { background: rgba(255,255,255,.2); }
   #dune-admin-bar .dune-ab-escape {
     color: rgba(255,255,255,.55); text-decoration: none;
     font-size: 12px; margin-left: auto;
@@ -211,6 +240,7 @@ export function buildAdminBarHtml(opts: {
   <span class="dune-ab-title">${escapeHtml(pageTitle ?? sourcePath)}</span>
   <button id="dune-ab-edit-toggle">✎ Editing</button>
   <button id="dune-ab-save">Save</button>
+  ${renderAdminBarActions(actions)}
   <a href="${adminPageUrl}" class="dune-ab-escape" title="Open full admin editor">Open in admin →</a>
   <span class="dune-ab-user">${escapeHtml(userName)}</span>
 </div>
@@ -569,6 +599,8 @@ export async function injectAdminBar(
     adminPrefix: string;
     userName: string;
     pluginVersion: string;
+    /** Buttons contributed by other plugins via `DunePlugin.adminBarActions`. */
+    actions?: AdminBarAction[];
   },
 ): Promise<Response> {
   if (!response.body) return response;
