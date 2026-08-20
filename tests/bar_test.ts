@@ -37,6 +37,23 @@ Deno.test("buildAdminBarHtml: renders the source-editing overlay markup and open
   assertEquals(html.includes(`<iframe id="dune-source-overlay-frame" src=`), false);
 });
 
+Deno.test("buildAdminBarHtml: @media print hides the admin bar and its overlays", () => {
+  // An admin printing straight from the browser (Ctrl+P / print-to-PDF)
+  // while viewing a page would otherwise get the fixed toolbar (and the
+  // source-editing overlay, if open) baked into the printout. The scripted
+  // PDF export (scripts/export-pdf.ts) browses anonymously and never sees
+  // any of this to begin with — this covers the manual-print path only.
+  const html = buildAdminBarHtml(baseOpts);
+  const printBlock = html.match(/@media print\s*{([^]*?)}\s*}/)?.[0];
+  if (!printBlock) throw new Error("no @media print block found");
+  assertStringIncludes(printBlock, "#dune-admin-bar");
+  assertStringIncludes(printBlock, "#dune-ao-edit-handle");
+  assertStringIncludes(printBlock, "#dune-source-overlay");
+  assertStringIncludes(printBlock, ".dune-bubble-menu");
+  assertStringIncludes(printBlock, ".dune-ao-body-toolbar");
+  assertStringIncludes(printBlock, "display: none !important");
+});
+
 Deno.test("buildAdminBarHtml: href action renders as a link", () => {
   const html = buildAdminBarHtml({
     ...baseOpts,

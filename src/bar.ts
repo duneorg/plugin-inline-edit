@@ -156,6 +156,23 @@ export function buildAdminBarHtml(opts: {
   #dune-admin-bar .dune-ab-user { font-size: 11px; opacity: .5; }
   body { padding-top: 40px !important; }
 
+  /* None of this admin-only chrome belongs in printed/PDF output — an
+     admin printing straight from the browser (Ctrl+P / print-to-PDF)
+     while viewing a page would otherwise get the fixed toolbar baked into
+     every page of the printout. The scripted PDF export (scripts/export-
+     pdf.ts) browses anonymously and never sees any of this in the first
+     place; this is specifically for the manual-print path. */
+  @media print {
+    #dune-admin-bar,
+    #dune-ao-edit-handle,
+    #dune-source-overlay,
+    .dune-bubble-menu,
+    .dune-ao-body-toolbar {
+      display: none !important;
+    }
+    body { padding-top: 0 !important; }
+  }
+
   /* Source-editing overlay — full MDX/markdown source editor (the same
      /admin/pages/edit view used from the admin panel) in an on-page modal,
      so editing MDX-heavy pages (which inline body-editing can't handle,
