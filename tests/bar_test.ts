@@ -16,6 +16,27 @@ Deno.test("buildAdminBarHtml: no actions — bar renders with no action elements
   assertEquals(html.includes('class="dune-ab-action"'), false);
 });
 
+Deno.test("buildAdminBarHtml: escape link and source overlay point at /pages/edit?path=..., not the nonexistent /pages/<path>", () => {
+  // Regression test: adminPageUrl used to be `${adminPrefix}/pages/${encodedPath}`,
+  // a route that was never registered (plugin-admin only has
+  // /admin/pages/edit?path=... and /admin/pages/builder) — 404'd every time.
+  const html = buildAdminBarHtml(baseOpts);
+  const expectedUrl = "/admin/pages/edit?path=03.arbeitswelt%2F01.test.mdx";
+  assertStringIncludes(html, `<a href="${expectedUrl}" class="dune-ab-escape"`);
+  assertStringIncludes(html, `window.__DUNE_ADMIN_PAGE_URL__ = ${JSON.stringify(expectedUrl)}`);
+  assertEquals(html.includes(`/pages/03.arbeitswelt`), false);
+});
+
+Deno.test("buildAdminBarHtml: renders the source-editing overlay markup and open button", () => {
+  const html = buildAdminBarHtml(baseOpts);
+  assertStringIncludes(html, `<button id="dune-ab-edit-source">✎ Edit source</button>`);
+  assertStringIncludes(html, `<div id="dune-source-overlay">`);
+  assertStringIncludes(html, `<iframe id="dune-source-overlay-frame"`);
+  // Iframe src is set lazily by the client script on first open, not
+  // server-rendered — the overlay must not eagerly load the editor.
+  assertEquals(html.includes(`<iframe id="dune-source-overlay-frame" src=`), false);
+});
+
 Deno.test("buildAdminBarHtml: href action renders as a link", () => {
   const html = buildAdminBarHtml({
     ...baseOpts,
