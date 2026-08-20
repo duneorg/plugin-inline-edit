@@ -118,6 +118,11 @@ export function buildAdminBarHtml(opts: {
   // /admin/pages/<path> segment route); that 404'd. Fixed alongside adding
   // the "Edit source" overlay below, which opens the same URL in an iframe.
   const adminPageUrl = `${adminPrefix}/pages/edit?path=${encodedPath}`;
+  // The overlay iframe gets `embedded=1` (plugin-admin's _layout.tsx drops
+  // the sidebar/topbar chrome for it — redundant floated over a content
+  // page, nowhere to navigate to). The escape link stays un-embedded since
+  // that's a real full-page navigation, where the full admin shell belongs.
+  const adminPageUrlEmbedded = `${adminPageUrl}&embedded=1`;
   const commitUrl = `${adminPrefix}/api/content/${encodedPath}/commit`;
   const fieldsUrl = `${adminPrefix}/api/content/${encodedPath}/fields`;
 
@@ -309,7 +314,7 @@ export function buildAdminBarHtml(opts: {
   window.__DUNE_SOURCE_URL__ = ${jsonStr(commitUrl.replace("/commit", "/source"))};
   window.__DUNE_USER_NAME__ = ${jsonStr(userName)};
   window.__DUNE_EDIT_WS_PATH__ = "/api/inline-edit/ws";
-  window.__DUNE_ADMIN_PAGE_URL__ = ${jsonStr(adminPageUrl)};
+  window.__DUNE_ADMIN_PAGE_URL__ = ${jsonStr(adminPageUrlEmbedded)};
 
   // ── Source-editing overlay ───────────────────────────────────────────────────
   (function() {

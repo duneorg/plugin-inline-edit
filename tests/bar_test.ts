@@ -22,8 +22,15 @@ Deno.test("buildAdminBarHtml: escape link and source overlay point at /pages/edi
   // /admin/pages/edit?path=... and /admin/pages/builder) — 404'd every time.
   const html = buildAdminBarHtml(baseOpts);
   const expectedUrl = "/admin/pages/edit?path=03.arbeitswelt%2F01.test.mdx";
+  // The escape link is a real full-page navigation — no embedded=1, full
+  // admin shell. The overlay iframe gets embedded=1 so plugin-admin's
+  // _layout.tsx drops the redundant sidebar/topbar chrome (see its own
+  // handling of that param).
   assertStringIncludes(html, `<a href="${expectedUrl}" class="dune-ab-escape"`);
-  assertStringIncludes(html, `window.__DUNE_ADMIN_PAGE_URL__ = ${JSON.stringify(expectedUrl)}`);
+  assertStringIncludes(
+    html,
+    `window.__DUNE_ADMIN_PAGE_URL__ = ${JSON.stringify(expectedUrl + "&embedded=1")}`,
+  );
   assertEquals(html.includes(`/pages/03.arbeitswelt`), false);
 });
 
