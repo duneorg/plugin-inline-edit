@@ -1,5 +1,49 @@
 # Changelog
 
+## [2.2.0] — 2026-08-22
+
+### Added
+
+- **Buttons contributed via `DunePlugin.adminBarActions` now render in the
+  admin bar**, between Save and the "Open in admin" escape link — an
+  `href` renders as a link, `onClick` as a button running that literal JS
+  (label/icon/href HTML-escaped; `onClick` attribute-escaped for syntax
+  safety). Lets another plugin (e.g. a PDF export) add a quick-link to the
+  shared toolbar without this plugin knowing anything about what it does.
+  Requires `@dune/core@0.32.0`, which added `ctx.plugins` to
+  `ResponseTransformContext`; pin bumped to `^0.32.0` accordingly.
+- **In-page "Edit source" overlay** for the full MDX editor — opens
+  `/admin/pages/edit?path=...` in an on-page iframe modal, for editing
+  MDX-heavy pages the inline body-editor can't annotate (no single
+  `data-dune-body` element). Requires `@dune/plugin-admin@2.0.0`'s
+  same-origin framing support for `/pages/edit`. The overlay's iframe
+  passes `embedded=1`, which drops plugin-admin's sidebar/topbar chrome
+  (redundant when floated over a content page with nowhere else to
+  navigate). The escape link stays un-embedded, since that's a real
+  full-page navigation.
+
+### Fixed
+
+- **The admin bar and its overlays no longer print.** Printing straight
+  from the browser (Ctrl+P / print-to-PDF) while viewing a page baked the
+  fixed admin toolbar, and the new source-editing overlay, into the
+  printout — nothing hid this admin-only chrome under `@media print`. Only
+  affects manual browser printing; the scripted PDF export browses
+  anonymously and never sees the admin bar at all.
+- **Save button no longer shows before any edit is made.** It now starts
+  hidden and appears the moment a field edit begins, hiding again after a
+  successful commit.
+- **"Editing" toggle and Save button no longer render on a page with
+  nothing editable.** Both were previously always shown, even when no
+  title/body element was annotated — clicking "Editing" enabled hover
+  handles that could never find a target, and there was nothing a commit
+  could save. "Edit source" still renders — it works independent of
+  inline annotation.
+- **The "Open in admin →" escape link 404'd.** It pointed at
+  `${adminPrefix}/pages/${path}`, a route plugin-admin never registered
+  (only `/pages/edit?path=...` and `/pages/builder` exist). Fixed to use
+  the correct URL.
+
 ## [2.1.8] — 2026-08-16
 
 ### Fixed
