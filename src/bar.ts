@@ -39,13 +39,18 @@ import type { AdminBarAction } from "@dune/core/plugins";
  *   markdown body (the starter template does this by default). Without the
  *   marker, body editing is unavailable for the page.
  */
-export function annotateEditableElements(html: string, sourcePath: string): string {
+export function annotateEditableElements(
+  html: string,
+  sourcePath: string,
+): { html: string; hasEditableContent: boolean } {
   const src = `data-dune-source="${escapeAttr(sourcePath)}"`;
 
+  let titleAnnotated = false;
   let annotated = html.replace(
     /(<h1\b)([^>]*?>)/,
     (_match, tag, rest) => {
       if (rest.includes("data-dune-")) return _match;
+      titleAnnotated = true;
       return `${tag} data-dune-field="title" ${src}${rest}`;
     },
   );
@@ -55,14 +60,24 @@ export function annotateEditableElements(html: string, sourcePath: string): stri
     /<[a-zA-Z][a-zA-Z0-9-]*\b[^>]*\bdata-dune-body\b[^>]*>/g,
     (match) => {
       if (bodyAnnotated) return match;
-      if (match.includes("data-dune-editable") || match.includes("data-dune-no-edit")) return match;
+      if (
+        match.includes("data-dune-editable") ||
+        match.includes("data-dune-no-edit")
+      ) return match;
       bodyAnnotated = true;
       const sourceAttr = match.includes("data-dune-source") ? "" : ` ${src}`;
       return match.replace(/>$/, ` data-dune-editable="body"${sourceAttr}>`);
     },
   );
 
-  return annotated;
+  // An element already carrying data-dune-field/data-dune-editable (hand-written
+  // or rendered via the @dune/core/ui/editable marker components) counts too —
+  // those were left untouched above (see the module doc), so titleAnnotated/
+  // bodyAnnotated alone would under-report a page that's fully hand-annotated.
+  const hasEditableContent = titleAnnotated || bodyAnnotated ||
+    /\bdata-dune-field=|\bdata-dune-editable=/.test(html);
+
+  return { html: annotated, hasEditableContent };
 }
 
 function escapeAttr(s: string): string {
@@ -89,12 +104,20 @@ function jsonStr(s: string): string {
  */
 function renderAdminBarActions(actions: AdminBarAction[]): string {
   return actions.map((a) => {
-    const label = `${a.icon ? escapeHtml(a.icon) + " " : ""}${escapeHtml(a.label)}`;
+    const label = `${a.icon ? escapeHtml(a.icon) + " " : ""}${
+      escapeHtml(a.label)
+    }`;
     if (a.href) {
-      return `<a id="${escapeAttr(a.id)}" class="dune-ab-action" href="${escapeAttr(a.href)}">${label}</a>`;
+      return `<a id="${escapeAttr(a.id)}" class="dune-ab-action" href="${
+        escapeAttr(a.href)
+      }">${label}</a>`;
     }
     if (a.onClick) {
-      return `<button id="${escapeAttr(a.id)}" class="dune-ab-action" onclick="${escapeAttr(a.onClick)}">${label}</button>`;
+      return `<button id="${
+        escapeAttr(a.id)
+      }" class="dune-ab-action" onclick="${
+        escapeAttr(a.onClick)
+      }">${label}</button>`;
     }
     return "";
   }).join("");
@@ -110,8 +133,27 @@ export function buildAdminBarHtml(opts: {
   pluginVersion: string;
   /** Buttons contributed by other plugins via `DunePlugin.adminBarActions` — see mod.ts. */
   actions?: AdminBarAction[];
+  /**
+   * Whether `annotateEditableElements()` found anything to annotate on this
+   * page (a title `<h1>` or a `data-dune-body` element). When false, the
+   * "Editing"/"Save" buttons are pure no-ops — clicking "Editing" enables
+   * hover handles that will never find a target, and there's nothing a
+   * field-level Save could ever commit — so both are omitted. "Edit source"
+   * stays: it always works, regardless of whether inline annotation found
+   * anything. Defaults to true (render normally) for callers that haven't
+   * computed it, e.g. call sites predating this option.
+   */
+  hasEditableContent?: boolean;
 }): string {
-  const { sourcePath, pageTitle, adminPrefix, userName, pluginVersion, actions = [] } = opts;
+  const {
+    sourcePath,
+    pageTitle,
+    adminPrefix,
+    userName,
+    pluginVersion,
+    actions = [],
+    hasEditableContent = true,
+  } = opts;
   const encodedPath = encodeURIComponent(sourcePath);
   // Was `${adminPrefix}/pages/${encodedPath}` — no such route exists
   // (plugin-admin registers /admin/pages/edit?path=..., not a
@@ -146,7 +188,9 @@ export function buildAdminBarHtml(opts: {
     font-size: 12px; cursor: pointer;
   }
   #dune-ab-edit-toggle { background: #3498db; color: #fff; }
-  #dune-ab-save { background: #27ae60; color: #fff; }
+  /* Hidden until a field edit actually starts (see markDirty() below) — a
+     visible Save button with nothing to commit reads as broken, not idle. */
+  #dune-ab-save { background: #27ae60; color: #fff; display: none; }
   #dune-ab-save:disabled { opacity: .6; cursor: default; }
   #dune-admin-bar .dune-ab-action {
     background: rgba(255,255,255,.12); color: #fff; text-decoration: none;
@@ -289,8 +333,12 @@ export function buildAdminBarHtml(opts: {
 <div id="dune-admin-bar">
   <span class="dune-ab-brand">✦ DUNE</span>
   <span class="dune-ab-title">${escapeHtml(pageTitle ?? sourcePath)}</span>
-  <button id="dune-ab-edit-toggle">✎ Editing</button>
-  <button id="dune-ab-save">Save</button>
+  ${
+    hasEditableContent
+      ? `<button id="dune-ab-edit-toggle">✎ Editing</button>
+  <button id="dune-ab-save">Save</button>`
+      : ""
+  }
   <button id="dune-ab-edit-source">✎ Edit source</button>
   ${renderAdminBarActions(actions)}
   <a href="${adminPageUrl}" class="dune-ab-escape" title="Open full admin editor">Open in admin →</a>
@@ -311,7 +359,9 @@ export function buildAdminBarHtml(opts: {
   window.__DUNE_EDIT_SOURCE_PATH__ = ${jsonStr(sourcePath)};
   window.__DUNE_COMMIT_URL__ = ${jsonStr(commitUrl)};
   window.__DUNE_FIELDS_URL__ = ${jsonStr(fieldsUrl)};
-  window.__DUNE_SOURCE_URL__ = ${jsonStr(commitUrl.replace("/commit", "/source"))};
+  window.__DUNE_SOURCE_URL__ = ${
+    jsonStr(commitUrl.replace("/commit", "/source"))
+  };
   window.__DUNE_USER_NAME__ = ${jsonStr(userName)};
   window.__DUNE_EDIT_WS_PATH__ = "/api/inline-edit/ws";
   window.__DUNE_ADMIN_PAGE_URL__ = ${jsonStr(adminPageUrlEmbedded)};
@@ -348,43 +398,65 @@ export function buildAdminBarHtml(opts: {
   document.body.classList.add('dune-edit-mode');
 
   // ── Admin bar buttons ─────────────────────────────────────────────────────────
+  // Both are absent from the DOM entirely when the page has no editable
+  // title/body (hasEditableContent was false server-side) — guard every
+  // reference below rather than assume they exist.
   var saveBtn = document.getElementById('dune-ab-save');
   var toggleBtn = document.getElementById('dune-ab-edit-toggle');
 
-  toggleBtn.addEventListener('click', function() {
-    editMode = !editMode;
-    window.__DUNE_EDIT_MODE__ = editMode;
-    toggleBtn.textContent = editMode ? '✎ Editing' : '👁 Preview';
-    toggleBtn.style.background = editMode ? '#3498db' : 'rgba(255,255,255,.15)';
-    toggleBtn.style.border = editMode ? 'none' : '1px solid rgba(255,255,255,.2)';
-    document.body.classList.toggle('dune-edit-mode', editMode);
-    if (!editMode) hideHandle();
-    window.dispatchEvent(new CustomEvent('dune:edit-mode-change', { detail: { mode: editMode ? 'edit' : 'preview' } }));
-  });
+  // Save starts hidden (see the #dune-ab-save CSS rule) and only appears once
+  // a field edit is actually in progress — a permanently-visible Save button
+  // with nothing to commit reads as broken, not idle.
+  var dirty = false;
+  function markDirty() {
+    if (dirty || !saveBtn) return;
+    dirty = true;
+    saveBtn.style.display = 'inline-block';
+  }
+  function clearDirty() {
+    dirty = false;
+    if (saveBtn) saveBtn.style.display = 'none';
+  }
 
-  saveBtn.addEventListener('click', async function() {
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Saving…';
-    try {
-      var res = await fetch(window.__DUNE_COMMIT_URL__, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}'
-      });
-      saveBtn.textContent = res.ok ? 'Saved ✓' : 'Error ✗';
-      saveBtn.style.background = res.ok ? '#2ecc71' : '#e74c3c';
-      setTimeout(function() {
-        saveBtn.textContent = 'Save';
-        saveBtn.style.background = '#27ae60';
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', function() {
+      editMode = !editMode;
+      window.__DUNE_EDIT_MODE__ = editMode;
+      toggleBtn.textContent = editMode ? '✎ Editing' : '👁 Preview';
+      toggleBtn.style.background = editMode ? '#3498db' : 'rgba(255,255,255,.15)';
+      toggleBtn.style.border = editMode ? 'none' : '1px solid rgba(255,255,255,.2)';
+      document.body.classList.toggle('dune-edit-mode', editMode);
+      if (!editMode) hideHandle();
+      window.dispatchEvent(new CustomEvent('dune:edit-mode-change', { detail: { mode: editMode ? 'edit' : 'preview' } }));
+    });
+  }
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async function() {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving…';
+      try {
+        var res = await fetch(window.__DUNE_COMMIT_URL__, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        });
+        saveBtn.textContent = res.ok ? 'Saved ✓' : 'Error ✗';
+        saveBtn.style.background = res.ok ? '#2ecc71' : '#e74c3c';
+        setTimeout(function() {
+          saveBtn.textContent = 'Save';
+          saveBtn.style.background = '#27ae60';
+          saveBtn.disabled = false;
+          if (res.ok) clearDirty();
+        }, 2000);
+      } catch(e) {
+        saveBtn.textContent = 'Error ✗';
+        saveBtn.style.background = '#e74c3c';
         saveBtn.disabled = false;
-      }, 2000);
-    } catch(e) {
-      saveBtn.textContent = 'Error ✗';
-      saveBtn.style.background = '#e74c3c';
-      saveBtn.disabled = false;
-    }
-  });
+      }
+    });
+  }
 
   // ── Auto-overlay activation ───────────────────────────────────────────────────
 
@@ -485,6 +557,7 @@ export function buildAdminBarHtml(opts: {
     el.dataset.duneAoOriginal = el.textContent;
     el.contentEditable = 'true';
     el.focus();
+    markDirty();
   }
 
   // ── Body editing — TipTap WYSIWYG over the markdown source ────────────────
@@ -693,11 +766,15 @@ export async function injectAdminBar(
   if (!response.body) return response;
 
   const bodyBytes = await response.arrayBuffer();
-  let html = new TextDecoder().decode(bodyBytes);
+  const bodyText = new TextDecoder().decode(bodyBytes);
 
-  html = annotateEditableElements(html, opts.sourcePath);
+  const { html: annotated, hasEditableContent } = annotateEditableElements(
+    bodyText,
+    opts.sourcePath,
+  );
+  let html = annotated;
 
-  const barHtml = buildAdminBarHtml(opts);
+  const barHtml = buildAdminBarHtml({ ...opts, hasEditableContent });
   if (html.includes("</body>")) {
     html = html.replace("</body>", `${barHtml}</body>`);
   } else if (html.includes("</html>")) {
