@@ -6,9 +6,8 @@
  * connected clients.
  */
 
-import * as Y from "yjs";
+import type * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
-import { join } from "@std/path";
 import type { InlineEditManager } from "@dune/core/inline-edit";
 import type { InlineEditManagerOptions, InlineEditSession, InlineEditClient } from "./types.ts";
 import { loadYDoc, persistYDoc, deleteYDoc } from "./ydoc-manager.ts";

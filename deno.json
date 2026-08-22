@@ -10,7 +10,8 @@
     ".": "./src/mod.ts"
   },
   "tasks": {
-    "test": "deno test -A --config=deno.dev.json tests/"
+    "test": "deno test -A --config=deno.dev.json tests/",
+    "check": "deno lint src/ && deno check src/**/*.ts"
   },
   "imports": {
     "@dune/core": "jsr:@dune/core@^0.32.0",

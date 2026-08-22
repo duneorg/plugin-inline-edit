@@ -10,7 +10,7 @@
  * before writing to the Y.js text; what we persist here is that Markdown.
  */
 
-import * as Y from "yjs";
+import type * as Y from "yjs";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import type { StorageAdapter } from "@dune/core";
 import type { HistoryEngine } from "@dune/core";

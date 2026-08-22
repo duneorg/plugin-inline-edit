@@ -120,7 +120,6 @@ export function mountBodyEditor(opts: MountOptions): EditorHandle {
   let destroyed = false;
   let applyingRemote = false;
   let syncTimer: ReturnType<typeof setTimeout> | undefined;
-  // deno-lint-ignore no-explicit-any
   let bubbleMenuHandle: ReturnType<typeof buildBubbleMenu> | null = null;
 
   let resolveReady!: () => void;

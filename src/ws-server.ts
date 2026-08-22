@@ -13,7 +13,7 @@
  * Security limits mirror those in the existing OT collab manager.
  */
 
-import * as Y from "yjs";
+import type * as Y from "yjs";
 import * as syncProtocol from "y-protocols/sync";
 import * as awarenessProtocol from "y-protocols/awareness";
 import * as encoding from "lib0/encoding";
@@ -32,21 +32,6 @@ const MESSAGE_AWARENESS = 1;
 
 const MAX_FRAME_BYTES = 512 * 1024;  // 512 KB per frame
 const MAX_CONNECTIONS_PER_DOC = 20;
-
-// ── Presence colours ──────────────────────────────────────────────────────────
-
-const PRESENCE_COLORS = [
-  "#e74c3c", "#3498db", "#2ecc71", "#f39c12",
-  "#9b59b6", "#1abc9c", "#e67e22", "#e91e63",
-];
-
-function assignColor(session: InlineEditSession): string {
-  const used = new Set([...session.clients.values()].map((c) => c.color));
-  return (
-    PRESENCE_COLORS.find((c) => !used.has(c)) ??
-    PRESENCE_COLORS[Math.floor(Math.random() * PRESENCE_COLORS.length)]
-  );
-}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

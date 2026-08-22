@@ -58,7 +58,7 @@ const plugin: DunePlugin = {
     };
   },
 
-  async transformResponse({ req, response, auth, page, adminPrefix, plugins }) {
+  transformResponse({ req, response, auth, page, adminPrefix, plugins }) {
     // Only inject for authenticated admins with edit rights on content pages.
     if (!auth || !auth.hasPermission("pages.update")) return response;
     if (!page) return response;
