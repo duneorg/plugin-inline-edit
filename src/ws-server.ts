@@ -21,6 +21,7 @@ import * as decoding from "lib0/decoding";
 
 import type { InlineEditClient, InlineEditSession } from "./types.ts";
 import { persistYDoc } from "./ydoc-manager.ts";
+import { warnThrottled } from "./log.ts";
 import type { StorageAdapter } from "@dune/core";
 
 // ── Protocol constants ────────────────────────────────────────────────────────
@@ -201,7 +202,9 @@ export function connectClient(opts: {
           scheduleFlush(session, autoFlushMs, onFlush);
 
           // Persist asynchronously (fire-and-forget on each update; compacts).
-          persistYDoc(dataDir, session.sourcePath, doc, storage).catch(() => {});
+          persistYDoc(dataDir, session.sourcePath, doc, storage).catch((err) =>
+            warnThrottled("persist", `saving ${session.sourcePath} failed`, err)
+          );
         }
       } else if (messageType === MESSAGE_AWARENESS) {
         // Update awareness; broadcast to all clients including sender (standard
@@ -211,8 +214,9 @@ export function connectClient(opts: {
         const changedClients = Array.from(awareness.getStates().keys());
         broadcast(session, encodeAwarenessUpdate(awareness, changedClients));
       }
-    } catch {
-      // Malformed frame — silently drop.
+    } catch (err) {
+      // Malformed frame (or a failure applying it): drop it, but say so.
+      warnThrottled("frame", `dropped a websocket message for ${session.sourcePath}`, err);
     }
   };
 
@@ -236,7 +240,9 @@ export function connectClient(opts: {
     // Auto-flush when last client leaves if there's pending content.
     if (session.clients.size === 0) {
       clearFlushTimer(session);
-      onFlush(session.sourcePath).catch(() => {});
+      onFlush(session.sourcePath).catch((err) =>
+        warnThrottled("flush", `flushing ${session.sourcePath} failed`, err)
+      );
     }
   };
 
