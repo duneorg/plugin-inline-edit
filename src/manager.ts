@@ -6,6 +6,7 @@
  * connected clients.
  */
 
+import { warnThrottled } from "./log.ts";
 import type * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
 import type { InlineEditManager } from "@dune/core/inline-edit";
@@ -105,7 +106,9 @@ export function createInlineEditManager(
           now - session.lastActivity > SESSION_IDLE_TTL_MS
         ) {
           // Persist before evicting.
-          persistYDoc(dataDir, path, doc, storage).catch(() => {});
+          persistYDoc(dataDir, path, doc, storage).catch((err) =>
+            warnThrottled("persist", `saving ${path} before eviction failed`, err)
+          );
           if (session.flushTimer !== undefined) {
             clearTimeout(session.flushTimer);
           }

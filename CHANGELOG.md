@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- **Failed saves and dropped frames are no longer silent.** A failed write of the
+  collaborative document (on each update, on idle eviction, on the last client
+  leaving), a failed flush, a throwing `onPageUpdate` hook, and any error while
+  handling a websocket frame were swallowed by empty `catch`es. They now log a
+  warning, at most one per kind per minute.
+- **`plugin.version` reported `2.1.4`.** It now matches `deno.json`, and a test
+  keeps the two in step.
+
 ## [2.2.3] — 2026-10-27
 
 ### Fixed

@@ -10,6 +10,7 @@
  * before writing to the Y.js text; what we persist here is that Markdown.
  */
 
+import { warnThrottled } from "./log.ts";
 import type * as Y from "yjs";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import type { StorageAdapter } from "@dune/core";
@@ -107,7 +108,9 @@ export async function commitDoc(opts: {
   // Write to disk.
   await storage.write(filePath, committed);
 
-  hooks?.fire("onPageUpdate", { sourcePath }).catch(() => {});
+  hooks?.fire("onPageUpdate", { sourcePath }).catch((err) =>
+    warnThrottled("hook", "onPageUpdate hook failed", err)
+  );
 }
 
 // ── Field patch ────────────────────────────────────────────────────────────────
@@ -170,5 +173,7 @@ export async function patchFrontmatterFields(opts: {
 
   await storage.write(filePath, patched);
 
-  hooks?.fire("onPageUpdate", { sourcePath }).catch(() => {});
+  hooks?.fire("onPageUpdate", { sourcePath }).catch((err) =>
+    warnThrottled("hook", "onPageUpdate hook failed", err)
+  );
 }
