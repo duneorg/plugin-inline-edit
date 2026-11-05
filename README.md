@@ -17,9 +17,24 @@ Core defines the service interface and hosts the authenticated admin
 endpoints; this plugin supplies the implementation. Without it, Dune's
 inline-edit endpoints respond 501 and no edit chrome is injected.
 
+## How it plugs into core
+
+The plugin declares one capability in `setup()` and consumes one contribution
+point in `transformResponse`:
+
+- **Provides `inline-edit`** — core's `/api/inline-edit/ws` upgrades through this
+  manager, and the admin's content endpoints use it for commits and presence.
+  Any plugin can provide the same slot to replace it.
+- **Renders `bar.actions`** — buttons that other plugins contribute with
+  `api.capabilities.contribute("bar.actions", ({ page, adminPrefix }) => [...])`
+  show up in the admin bar; this plugin does not know what they do.
+
+Admin identity comes from whichever plugin provides `auth.session` (the admin
+plugin does); with none, no bar is injected.
+
 ## Installation
 
-Requires `@dune/core` ≥ 0.19.
+Requires `@dune/core` ≥ 0.36 (the capability registry; earlier cores used `DunePlugin.adminServices`, which this plugin no longer implements).
 
 Add the plugin to your site's `site.yaml`:
 

@@ -48,9 +48,9 @@ export interface InlineEditManagerOptions {
   autoFlushMs?: number;
   /**
    * Fires `onPageUpdate` after each commit/patch, matching plugin-admin's
-   * page-save routes. Optional so callers on a dune-core version that
-   * predates AdminServicesContext.hooks still work (edits still save —
-   * they just don't fire the hook).
+   * page-save routes. Optional so a caller that builds a manager directly
+   * (a test, a script) can omit it: edits still save, they just don't fire
+   * the hook. Core passes it through the capability context.
    */
   hooks?: HookRegistry;
 }

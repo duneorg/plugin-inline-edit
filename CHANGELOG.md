@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Changed — BREAKING
+
+- **Provides the `inline-edit` capability and reads `bar.actions`, instead of
+  `adminServices` and `ctx.plugins` (duneorg/dune#97, `@dune/core` 0.36).** The manager
+  is declared in `setup()` with `api.capabilities.provide("inline-edit", ...)`; the admin
+  bar collects its buttons from `ResponseTransformContext.barActions`, which carries what
+  plugins contributed with `capabilities.contribute("bar.actions", ...)`. Core 0.36
+  removed `DunePlugin.adminServices`, `adminBarActions` and
+  `ResponseTransformContext.plugins`, so this release needs `@dune/core` 0.36 or newer
+  and a major version bump (3.0.0) at release.
+
 ### Fixed
 
 - **Failed saves and dropped frames are no longer silent (#3).** A failed write of the
