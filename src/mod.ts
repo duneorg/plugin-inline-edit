@@ -52,13 +52,18 @@ const plugin: DunePlugin = {
     editor: import.meta.resolve("./client/editor.ts"),
   },
 
-  adminServices({ storage, history, dataDir, contentDir, hooks }) {
-    return {
-      inlineEdit: createInlineEditManager({ storage, history, dataDir, contentDir, hooks }),
-    };
+  // The `editor.inline` capability: core's `/api/inline-edit/ws` upgrades through
+  // this manager, and the admin's content endpoints use it for commits and
+  // presence. Core builds it once the history engine and storage exist.
+  setup(api) {
+    api.capabilities.provide(
+      "editor.inline",
+      ({ storage, history, dataDir, contentDir, hooks }) =>
+        createInlineEditManager({ storage, history, dataDir, contentDir, hooks }),
+    );
   },
 
-  transformResponse({ req, response, auth, page, adminPrefix, plugins }) {
+  transformResponse({ req, response, auth, page, adminPrefix, barActions }) {
     // Only inject for authenticated admins with edit rights on content pages.
     if (!auth || !auth.hasPermission("pages.update")) return response;
     if (!page) return response;
@@ -71,10 +76,9 @@ const plugin: DunePlugin = {
     const url = new URL(req.url);
     if (url.pathname.startsWith(adminPrefix)) return response;
 
-    // Collect adminBarActions from every plugin (including this one — it
-    // declares none) — see DunePlugin.adminBarActions for why this bar
-    // renders other plugins' buttons without knowing what they do.
-    const actions = plugins.flatMap((p) => p.adminBarActions?.({ page, adminPrefix }) ?? []);
+    // Buttons any plugin contributed to the `bar.actions` point. This bar
+    // renders them without knowing what they do.
+    const actions = barActions.flatMap((contribute) => contribute({ page, adminPrefix }));
 
     return injectAdminBar(response, {
       sourcePath: page.sourcePath,

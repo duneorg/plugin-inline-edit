@@ -97,7 +97,7 @@ function jsonStr(s: string): string {
 }
 
 /**
- * Render buttons contributed by other plugins via `DunePlugin.adminBarActions`
+ * Render buttons contributed by other plugins through the `bar.actions` capability point
  * (see mod.ts, which collects them and passes the result in here). `label`/
  * `icon`/`href` are escaped as untrusted display content; `onClick` is not —
  * see {@link AdminBarAction.onClick}'s own doc for why that's the right call.
@@ -131,7 +131,7 @@ export function buildAdminBarHtml(opts: {
   adminPrefix: string;
   userName: string;
   pluginVersion: string;
-  /** Buttons contributed by other plugins via `DunePlugin.adminBarActions` — see mod.ts. */
+  /** Buttons contributed by other plugins through the `bar.actions` capability point — see mod.ts. */
   actions?: AdminBarAction[];
   /**
    * Whether `annotateEditableElements()` found anything to annotate on this
@@ -759,7 +759,7 @@ export async function injectAdminBar(
     adminPrefix: string;
     userName: string;
     pluginVersion: string;
-    /** Buttons contributed by other plugins via `DunePlugin.adminBarActions`. */
+    /** Buttons contributed by other plugins through the `bar.actions` capability point. */
     actions?: AdminBarAction[];
   },
 ): Promise<Response> {

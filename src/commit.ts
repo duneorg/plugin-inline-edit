@@ -77,8 +77,8 @@ export async function commitDoc(opts: {
    * Fires `onPageUpdate` after a successful write, matching plugin-admin's
    * page-save route — without this, plugins that react to that hook (e.g.
    * regenerating content derived from the edited page) never see inline
-   * edits, only edits made through the admin CRUD routes. Optional so
-   * callers that predate AdminServicesContext.hooks still work.
+   * edits, only edits made through the admin CRUD routes. Optional so a
+   * caller that omits it (a test, a script) still works.
    */
   hooks?: HookRegistry;
 }): Promise<void> {
