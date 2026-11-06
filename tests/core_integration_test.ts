@@ -31,7 +31,7 @@ Deno.test(
   { sanitizeOps: false, sanitizeResources: false },
   async () => {
     await withSite([], async (ctx, handler) => {
-      assertEquals(ctx.capabilities.get("inline-edit"), undefined);
+      assertEquals(ctx.capabilities.get("editor.inline"), undefined);
       const res = await handler(new Request("http://localhost/api/inline-edit/ws"));
       assertEquals(res.status, 501);
     });
@@ -39,12 +39,12 @@ Deno.test(
 );
 
 Deno.test(
-  "with the plugin core resolves the inline-edit slot and the route proceeds to the WebSocket checks",
+  "with the plugin core resolves the editor.inline slot and the route proceeds to the WebSocket checks",
   { sanitizeOps: false, sanitizeResources: false },
   async () => {
     await withSite([plugin], async (ctx, handler) => {
-      assertEquals(ctx.capabilities.providers().find((p) => p.name === "inline-edit"), {
-        name: "inline-edit",
+      assertEquals(ctx.capabilities.providers().find((p) => p.name === "editor.inline"), {
+        name: "editor.inline",
         kind: "slot",
         provider: "inline-edit",
         status: "active",

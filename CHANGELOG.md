@@ -4,9 +4,9 @@
 
 ### Changed — BREAKING
 
-- **Provides the `inline-edit` capability and reads `bar.actions`, instead of
+- **Provides the `editor.inline` capability and reads `bar.actions`, instead of
   `adminServices` and `ctx.plugins` (duneorg/dune#97, `@dune/core` 0.36).** The manager
-  is declared in `setup()` with `api.capabilities.provide("inline-edit", ...)`; the admin
+  is declared in `setup()` with `api.capabilities.provide("editor.inline", ...)`; the admin
   bar collects its buttons from `ResponseTransformContext.barActions`, which carries what
   plugins contributed with `capabilities.contribute("bar.actions", ...)`. Core 0.36
   removed `DunePlugin.adminServices`, `adminBarActions` and

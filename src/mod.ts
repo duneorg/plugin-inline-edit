@@ -52,12 +52,12 @@ const plugin: DunePlugin = {
     editor: import.meta.resolve("./client/editor.ts"),
   },
 
-  // The `inline-edit` capability: core's `/api/inline-edit/ws` upgrades through
+  // The `editor.inline` capability: core's `/api/inline-edit/ws` upgrades through
   // this manager, and the admin's content endpoints use it for commits and
   // presence. Core builds it once the history engine and storage exist.
   setup(api) {
     api.capabilities.provide(
-      "inline-edit",
+      "editor.inline",
       ({ storage, history, dataDir, contentDir, hooks }) =>
         createInlineEditManager({ storage, history, dataDir, contentDir, hooks }),
     );

@@ -19,12 +19,12 @@ Deno.test("setup() provides the inline-edit slot, built from the capability cont
       contribute: () => {},
     },
   });
-  assertEquals(Object.keys(provided), ["inline-edit"]);
+  assertEquals(Object.keys(provided), ["editor.inline"]);
 
   const root = await Deno.makeTempDir({ prefix: "dune_inline_edit_caps_" });
   try {
     const storage = createStorage({ rootDir: root });
-    const manager = provided["inline-edit"]({
+    const manager = provided["editor.inline"]({
       storage,
       history: createHistoryEngine({ storage, maxRevisions: 5, dataDir: ".dune/history" } as never),
       dataDir: ".dune/admin",
