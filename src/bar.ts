@@ -22,7 +22,7 @@
  *      lazy-imported only when a body edit starts, so browsing costs nothing.
  */
 
-import type { AdminBarAction } from "@dune/core/plugins";
+import type { BarAction } from "./bar-actions.ts";
 
 // ── HTML annotation pass ──────────────────────────────────────────────────────
 
@@ -100,9 +100,9 @@ function jsonStr(s: string): string {
  * Render buttons contributed by other plugins through the `bar.actions` capability point
  * (see mod.ts, which collects them and passes the result in here). `label`/
  * `icon`/`href` are escaped as untrusted display content; `onClick` is not —
- * see {@link AdminBarAction.onClick}'s own doc for why that's the right call.
+ * see {@link BarAction.onClick}'s own doc for why that's the right call.
  */
-function renderAdminBarActions(actions: AdminBarAction[]): string {
+function renderBarActions(actions: BarAction[]): string {
   return actions.map((a) => {
     const label = `${a.icon ? escapeHtml(a.icon) + " " : ""}${
       escapeHtml(a.label)
@@ -132,7 +132,7 @@ export function buildAdminBarHtml(opts: {
   userName: string;
   pluginVersion: string;
   /** Buttons contributed by other plugins through the `bar.actions` capability point — see mod.ts. */
-  actions?: AdminBarAction[];
+  actions?: BarAction[];
   /**
    * Whether `annotateEditableElements()` found anything to annotate on this
    * page (a title `<h1>` or a `data-dune-body` element). When false, the
@@ -340,7 +340,7 @@ export function buildAdminBarHtml(opts: {
       : ""
   }
   <button id="dune-ab-edit-source">✎ Edit source</button>
-  ${renderAdminBarActions(actions)}
+  ${renderBarActions(actions)}
   <a href="${adminPageUrl}" class="dune-ab-escape" title="Open full admin editor">Open in admin →</a>
   <span class="dune-ab-user">${escapeHtml(userName)}</span>
 </div>
@@ -760,7 +760,7 @@ export async function injectAdminBar(
     userName: string;
     pluginVersion: string;
     /** Buttons contributed by other plugins through the `bar.actions` capability point. */
-    actions?: AdminBarAction[];
+    actions?: BarAction[];
   },
 ): Promise<Response> {
   if (!response.body) return response;

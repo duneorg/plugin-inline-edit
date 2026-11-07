@@ -38,6 +38,7 @@
 import type { DunePlugin } from "@dune/core/plugins";
 import { createInlineEditManager } from "./manager.ts";
 import { injectAdminBar } from "./bar.ts";
+import "./bar-actions.ts";
 
 const plugin: DunePlugin = {
   name: "inline-edit",
@@ -63,7 +64,7 @@ const plugin: DunePlugin = {
     );
   },
 
-  transformResponse({ req, response, auth, page, adminPrefix, barActions }) {
+  transformResponse({ req, response, auth, page, capabilities }) {
     // Only inject for authenticated admins with edit rights on content pages.
     if (!auth || !auth.hasPermission("pages.update")) return response;
     if (!page) return response;
@@ -72,13 +73,20 @@ const plugin: DunePlugin = {
     const contentType = response.headers.get("Content-Type") ?? "";
     if (!contentType.includes("text/html")) return response;
 
+    // The bar's edit, save and source controls talk to the admin's endpoints
+    // for now, so it needs to know where the admin is mounted; without one
+    // there is nothing for them to call. Read per request: this module is
+    // shared between sites.
+    const adminPrefix = capabilities.get("admin.prefix")?.prefix;
+    if (!adminPrefix) return response;
+
     // Never inject into admin paths.
     const url = new URL(req.url);
     if (url.pathname.startsWith(adminPrefix)) return response;
 
     // Buttons any plugin contributed to the `bar.actions` point. This bar
     // renders them without knowing what they do.
-    const actions = barActions.flatMap((contribute) => contribute({ page, adminPrefix }));
+    const actions = capabilities.list("bar.actions").flatMap((contribute) => contribute({ page }));
 
     return injectAdminBar(response, {
       sourcePath: page.sourcePath,
@@ -94,6 +102,7 @@ const plugin: DunePlugin = {
 export default plugin;
 
 export { createInlineEditManager } from "./manager.ts";
+export type { BarAction, BarActionContext } from "./bar-actions.ts";
 export type {
   InlineEditClient,
   InlineEditManagerOptions,

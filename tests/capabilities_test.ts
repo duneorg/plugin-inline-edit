@@ -1,7 +1,7 @@
 /**
  * The plugin meets core through the capability registry: it provides the
- * `inline-edit` slot in `setup()` and renders the `bar.actions` contributions
- * that arrive as `ResponseTransformContext.barActions`.
+ * `editor.inline` slot in `setup()` and renders the `bar.actions` contributions
+ * it reads from `ResponseTransformContext.capabilities`.
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
@@ -40,7 +40,16 @@ Deno.test("setup() provides the inline-edit slot, built from the capability cont
   }
 });
 
-Deno.test("transformResponse renders the buttons delivered as barActions", async () => {
+/** A reader holding the `admin.prefix` slot and the given `bar.actions` contributions. */
+function reader(barActions: unknown[], prefix: string | null = "/admin") {
+  return {
+    get: (name: string) => (name === "admin.prefix" && prefix ? { prefix } : undefined),
+    list: (point: string) => (point === "bar.actions" ? barActions : []),
+    providers: () => [],
+  };
+}
+
+Deno.test("transformResponse renders the buttons read from the bar.actions contributions", async () => {
   const response = new Response("<html><body><h1>Hi</h1></body></html>", {
     headers: { "Content-Type": "text/html; charset=utf-8" },
   });
@@ -50,13 +59,12 @@ Deno.test("transformResponse renders the buttons delivered as barActions", async
     response,
     auth: { username: "alice", role: "admin", hasPermission: () => true },
     page: { sourcePath: "content/about.md", route: "/about", title: "About", template: "post" },
-    adminPrefix: "/admin",
     config: {},
-    barActions: [
+    capabilities: reader([
       () => [{ id: "pdf:download", label: "PDF export", href: "/pdf/about" }],
       ({ page }: { page: { template: string } | null }) =>
         page?.template === "post" ? [{ id: "x:post-only", label: "Post only", href: "/x" }] : [],
-    ],
+    ]),
   }) as Response;
   const html = await out.text();
   assertStringIncludes(html, "PDF export");
@@ -71,9 +79,36 @@ Deno.test("transformResponse does nothing for visitors without edit rights", asy
     response,
     auth: null,
     page: { sourcePath: "content/about.md", route: "/about", title: "About", template: "post" },
-    adminPrefix: "/admin",
     config: {},
-    barActions: [() => [{ id: "a", label: "Never shown", href: "/a" }]],
+    capabilities: reader([() => [{ id: "a", label: "Never shown", href: "/a" }]]),
+  }) as Response;
+  assertEquals(out, response);
+});
+
+Deno.test("transformResponse injects nothing when no plugin provides admin.prefix", async () => {
+  const response = new Response("<html><body>x</body></html>", { headers: { "Content-Type": "text/html" } });
+  // deno-lint-ignore no-explicit-any
+  const out = await (plugin.transformResponse as any)({
+    req: new Request("http://localhost/about"),
+    response,
+    auth: { username: "alice", role: "admin", hasPermission: () => true },
+    page: { sourcePath: "content/about.md", route: "/about", title: "About", template: "post" },
+    config: {},
+    capabilities: reader([], null),
+  }) as Response;
+  assertEquals(out, response);
+});
+
+Deno.test("transformResponse skips the admin's own pages, using the prefix the admin provides", async () => {
+  const response = new Response("<html><body>x</body></html>", { headers: { "Content-Type": "text/html" } });
+  // deno-lint-ignore no-explicit-any
+  const out = await (plugin.transformResponse as any)({
+    req: new Request("http://localhost/panel/pages"),
+    response,
+    auth: { username: "alice", role: "admin", hasPermission: () => true },
+    page: { sourcePath: "content/about.md", route: "/about", title: "About", template: "post" },
+    config: {},
+    capabilities: reader([], "/panel"),
   }) as Response;
   assertEquals(out, response);
 });

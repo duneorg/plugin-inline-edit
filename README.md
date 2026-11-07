@@ -26,8 +26,9 @@ point in `transformResponse`:
   manager, and the admin's content endpoints use it for commits and presence.
   Any plugin can provide the same slot to replace it.
 - **Renders `bar.actions`** — buttons that other plugins contribute with
-  `api.capabilities.contribute("bar.actions", ({ page, adminPrefix }) => [...])`
-  show up in the admin bar; this plugin does not know what they do.
+  `api.capabilities.contribute("bar.actions", ({ page }) => [...])` show up in the
+  bar; this plugin does not know what they do. It declares the point, so import
+  `BarAction` / `BarActionContext` from `@dune/plugin-inline-edit`.
 
 Admin identity comes from whichever plugin provides `auth.session` (the admin
 plugin does); with none, no bar is injected.
