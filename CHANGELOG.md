@@ -19,8 +19,7 @@
   left core's contract; the context no longer carries `adminPrefix`). A plugin that adds a
   button imports the types from `@dune/plugin-inline-edit`. `transformResponse` reads the
   contributions and the `admin.prefix` slot from `ResponseTransformContext.capabilities`
-  instead of `barActions` / `adminPrefix`. With no `admin.prefix` provider no bar is injected,
-  as before (the bar's endpoints are still the admin's).
+  instead of `barActions` / `adminPrefix`.
 - **Provides the `editor.inline` capability and reads `bar.actions`, instead of
   `adminServices` and `ctx.plugins` (duneorg/dune#97, `@dune/core` 0.36).** The manager
   is declared in `setup()` with `api.capabilities.provide("editor.inline", ...)`; the admin
