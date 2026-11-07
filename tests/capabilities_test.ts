@@ -30,10 +30,11 @@ Deno.test("setup() provides the inline-edit slot, built from the capability cont
       dataDir: ".dune/admin",
       contentDir: "content",
       hooks: undefined,
-    }) as { handleUpgrade?: unknown; commit?: unknown; getPresence?: unknown };
+      config: { system: { content: {} } },
+    }) as { handleUpgrade?: unknown; handleRequest?: unknown; getPresence?: unknown };
     assertExists(manager);
     assertEquals(typeof manager.handleUpgrade, "function");
-    assertEquals(typeof manager.commit, "function");
+    assertEquals(typeof manager.handleRequest, "function");
     assertEquals(typeof manager.getPresence, "function");
   } finally {
     await Deno.remove(root, { recursive: true }).catch(() => {});
@@ -85,18 +86,20 @@ Deno.test("transformResponse does nothing for visitors without edit rights", asy
   assertEquals(out, response);
 });
 
-Deno.test("transformResponse injects nothing when no plugin provides admin.prefix", async () => {
-  const response = new Response("<html><body>x</body></html>", { headers: { "Content-Type": "text/html" } });
+Deno.test("transformResponse injects the bar on a site with no admin at all", async () => {
+  const response = new Response("<html><body><h1>Hi</h1></body></html>", { headers: { "Content-Type": "text/html" } });
   // deno-lint-ignore no-explicit-any
   const out = await (plugin.transformResponse as any)({
     req: new Request("http://localhost/about"),
     response,
-    auth: { username: "alice", role: "admin", hasPermission: () => true },
+    auth: { username: "alice", role: "editor", hasPermission: () => true },
     page: { sourcePath: "content/about.md", route: "/about", title: "About", template: "post" },
     config: {},
     capabilities: reader([], null),
   }) as Response;
-  assertEquals(out, response);
+  const html = await out.text();
+  assertStringIncludes(html, 'id="dune-admin-bar"');
+  assertStringIncludes(html, "/api/inline-edit/content/content%2Fabout.md/commit");
 });
 
 Deno.test("transformResponse skips the admin's own pages, using the prefix the admin provides", async () => {

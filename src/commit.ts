@@ -108,7 +108,7 @@ export async function commitDoc(opts: {
   // Write to disk.
   await storage.write(filePath, committed);
 
-  hooks?.fire("onPageUpdate", { sourcePath }).catch((err) =>
+  hooks?.fire("onPageUpdate", { sourcePath, actor: author }).catch((err) =>
     warnThrottled("hook", "onPageUpdate hook failed", err)
   );
 }
@@ -173,7 +173,7 @@ export async function patchFrontmatterFields(opts: {
 
   await storage.write(filePath, patched);
 
-  hooks?.fire("onPageUpdate", { sourcePath }).catch((err) =>
+  hooks?.fire("onPageUpdate", { sourcePath, actor: author }).catch((err) =>
     warnThrottled("hook", "onPageUpdate hook failed", err)
   );
 }

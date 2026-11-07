@@ -128,7 +128,6 @@ function renderBarActions(actions: BarAction[]): string {
 export function buildAdminBarHtml(opts: {
   sourcePath: string;
   pageTitle: string | null;
-  adminPrefix: string;
   userName: string;
   pluginVersion: string;
   /** Buttons contributed by other plugins through the `bar.actions` capability point — see mod.ts. */
@@ -138,9 +137,8 @@ export function buildAdminBarHtml(opts: {
    * page (a title `<h1>` or a `data-dune-body` element). When false, the
    * "Editing"/"Save" buttons are pure no-ops — clicking "Editing" enables
    * hover handles that will never find a target, and there's nothing a
-   * field-level Save could ever commit — so both are omitted. "Edit source"
-   * stays: it always works, regardless of whether inline annotation found
-   * anything. Defaults to true (render normally) for callers that haven't
+   * field-level Save could ever commit — so both are omitted. Buttons other
+   * plugins contribute stay. Defaults to true (render normally) for callers that haven't
    * computed it, e.g. call sites predating this option.
    */
   hasEditableContent?: boolean;
@@ -148,25 +146,16 @@ export function buildAdminBarHtml(opts: {
   const {
     sourcePath,
     pageTitle,
-    adminPrefix,
     userName,
     pluginVersion,
     actions = [],
     hasEditableContent = true,
   } = opts;
   const encodedPath = encodeURIComponent(sourcePath);
-  // Was `${adminPrefix}/pages/${encodedPath}` — no such route exists
-  // (plugin-admin registers /admin/pages/edit?path=..., not a
-  // /admin/pages/<path> segment route); that 404'd. Fixed alongside adding
-  // the "Edit source" overlay below, which opens the same URL in an iframe.
-  const adminPageUrl = `${adminPrefix}/pages/edit?path=${encodedPath}`;
-  // The overlay iframe gets `embedded=1` (plugin-admin's _layout.tsx drops
-  // the sidebar/topbar chrome for it — redundant floated over a content
-  // page, nowhere to navigate to). The escape link stays un-embedded since
-  // that's a real full-page navigation, where the full admin shell belongs.
-  const adminPageUrlEmbedded = `${adminPageUrl}&embedded=1`;
-  const commitUrl = `${adminPrefix}/api/content/${encodedPath}/commit`;
-  const fieldsUrl = `${adminPrefix}/api/content/${encodedPath}/fields`;
+  // The routes below are this plugin's own (core gates them and hands the
+  // request to `handleRequest`), so the bar works with or without an admin.
+  const commitUrl = `/api/inline-edit/content/${encodedPath}/commit`;
+  const fieldsUrl = `/api/inline-edit/content/${encodedPath}/fields`;
 
   return `
 <style>
@@ -214,37 +203,11 @@ export function buildAdminBarHtml(opts: {
   @media print {
     #dune-admin-bar,
     #dune-ao-edit-handle,
-    #dune-source-overlay,
     .dune-bubble-menu,
     .dune-ao-body-toolbar {
       display: none !important;
     }
     body { padding-top: 0 !important; }
-  }
-
-  /* Source-editing overlay — full MDX/markdown source editor (the same
-     /admin/pages/edit view used from the admin panel) in an on-page modal,
-     so editing MDX-heavy pages (which inline body-editing can't handle,
-     since there's no single data-dune-body element to annotate) doesn't
-     require leaving the page. */
-  #dune-ab-edit-source { background: rgba(255,255,255,.12); color: #fff; }
-  #dune-source-overlay {
-    display: none; position: fixed; inset: 0; z-index: 100000;
-    background: rgba(0,0,0,.5);
-  }
-  #dune-source-overlay.dune-open { display: flex; flex-direction: column; }
-  #dune-source-overlay-bar {
-    flex: none; display: flex; align-items: center; justify-content: flex-end;
-    padding: 8px 16px; background: #1a1a2e;
-  }
-  #dune-source-overlay-close {
-    background: rgba(255,255,255,.15); color: #fff; border: none;
-    border-radius: 4px; padding: 4px 12px; font-size: 12px; cursor: pointer;
-    font-family: inherit;
-  }
-  #dune-source-overlay-close:hover { background: rgba(255,255,255,.25); }
-  #dune-source-overlay-frame {
-    flex: 1; width: 100%; border: none; background: #fff;
   }
 
   /* Marker hover indicators (active when edit mode is on).
@@ -339,16 +302,8 @@ export function buildAdminBarHtml(opts: {
   <button id="dune-ab-save">Save</button>`
       : ""
   }
-  <button id="dune-ab-edit-source">✎ Edit source</button>
   ${renderBarActions(actions)}
-  <a href="${adminPageUrl}" class="dune-ab-escape" title="Open full admin editor">Open in admin →</a>
   <span class="dune-ab-user">${escapeHtml(userName)}</span>
-</div>
-<div id="dune-source-overlay">
-  <div id="dune-source-overlay-bar">
-    <button id="dune-source-overlay-close" type="button">✕ Close</button>
-  </div>
-  <iframe id="dune-source-overlay-frame" title="Edit source"></iframe>
 </div>
 <script>
 (function() {
@@ -364,35 +319,6 @@ export function buildAdminBarHtml(opts: {
   };
   window.__DUNE_USER_NAME__ = ${jsonStr(userName)};
   window.__DUNE_EDIT_WS_PATH__ = "/api/inline-edit/ws";
-  window.__DUNE_ADMIN_PAGE_URL__ = ${jsonStr(adminPageUrlEmbedded)};
-
-  // ── Source-editing overlay ───────────────────────────────────────────────────
-  (function() {
-    var overlay = document.getElementById('dune-source-overlay');
-    var frame = document.getElementById('dune-source-overlay-frame');
-    var openBtn = document.getElementById('dune-ab-edit-source');
-    var closeBtn = document.getElementById('dune-source-overlay-close');
-    var loaded = false;
-
-    function open() {
-      if (!loaded) {
-        frame.src = window.__DUNE_ADMIN_PAGE_URL__;
-        loaded = true;
-      }
-      overlay.classList.add('dune-open');
-    }
-    function close() {
-      overlay.classList.remove('dune-open');
-    }
-    openBtn.addEventListener('click', open);
-    closeBtn.addEventListener('click', close);
-    overlay.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') close();
-    });
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape' && overlay.classList.contains('dune-open')) close();
-    });
-  })();
 
   var editMode = true;
   document.body.classList.add('dune-edit-mode');
@@ -756,7 +682,6 @@ export async function injectAdminBar(
   opts: {
     sourcePath: string;
     pageTitle: string | null;
-    adminPrefix: string;
     userName: string;
     pluginVersion: string;
     /** Buttons contributed by other plugins through the `bar.actions` capability point. */

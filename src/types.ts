@@ -53,4 +53,6 @@ export interface InlineEditManagerOptions {
    * the hook. Core passes it through the capability context.
    */
   hooks?: HookRegistry;
+  /** Roles allowed to write `.tsx` pages through the HTTP routes (`system.content.allow_tsx_format`); default `["admin"]`. */
+  allowTsxFormat?: readonly string[];
 }
