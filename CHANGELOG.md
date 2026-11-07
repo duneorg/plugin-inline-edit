@@ -4,6 +4,15 @@
 
 ### Changed — BREAKING
 
+- **Serves its own HTTP routes, so the bar works without an admin (#127).** `source`, `commit` and
+  `fields` are at `/api/inline-edit/content/<encoded path>/...` (core gates them: signed-in editor
+  holding `pages.update`, same-origin writes), with the TSX and page-ownership rules the admin's
+  routes enforced. The bar is injected for any such editor, including a site user on a site with no
+  admin, and no longer requires an `admin.prefix` provider. The bar no longer renders "Edit source"
+  or "Open in admin": the admin contributes those through `bar.actions`. `commit()` and
+  `patchFields()` stay on the manager object but are not part of core's `InlineEditManager`.
+  `onPageUpdate` carries the editor's name as `actor`.
+
 - **The bar declares its own extension point, and reads what it needs per request (#127).**
   `bar.actions` is declared here, by declaration merging, with its types `BarAction` and
   `BarActionContext` (renamed from core's `AdminBarAction` / `AdminBarActionContext`, which
