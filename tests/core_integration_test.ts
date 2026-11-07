@@ -1,5 +1,5 @@
 /**
- * Against a real core: the plugin's `inline-edit` slot is what enables core's
+ * Against a real core: the plugin's `editor.inline` slot is what enables core's
  * `/api/inline-edit/ws` route (501 without it, WebSocket checks with it).
  */
 
@@ -18,7 +18,7 @@ async function withSite(
     await Deno.mkdir(join(root, "content", "01.home"), { recursive: true });
     await Deno.writeTextFile(join(root, "content", "01.home", "default.md"), "---\ntitle: Home\n---\n\nHello\n");
     // deno-lint-ignore no-explicit-any
-    const ctx = await bootstrap(root, { plugins: plugins as any, configOverrides: { admin: { enabled: false } as any } });
+    const ctx = await bootstrap(root, { plugins: plugins as any });
     const { app } = await createDuneApp(ctx, { root, port: 0, dev: false });
     await fn(ctx, app.handler());
   } finally {
