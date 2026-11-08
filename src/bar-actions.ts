@@ -3,17 +3,19 @@
  *
  * This plugin renders the editing bar and is the only reader of `bar.actions`,
  * so it declares the key (and its types) itself instead of core's contract
- * carrying it. A plugin that adds a button imports the types from
- * `@dune/plugin-inline-edit`; importing them also makes the key known to
- * TypeScript:
+ * carrying it. A plugin that adds a button imports the key and the types from
+ * `@dune/plugin-inline-edit` (or recreates the key from the name `bar.actions`):
  *
  * ```ts
- * api.capabilities.contribute("bar.actions", ({ page }) =>
+ * import { BAR_ACTIONS } from "@dune/plugin-inline-edit";
+ * api.capabilities.contribute(BAR_ACTIONS, ({ page }) =>
  *   page ? [{ id: "pdf:download", label: "PDF", href: `/pdf${page.route}` }] : []);
  * ```
  *
  * @module
  */
+
+import { type CapabilityKey, capabilityKey } from "@dune/core/plugin-api";
 
 /**
  * Context passed to a `bar.actions` contribution: what belongs on the bar for
@@ -59,9 +61,8 @@ export interface BarAction {
   onClick?: string;
 }
 
-declare module "@dune/core/plugin-api" {
-  interface Contributions {
-    /** Buttons for the editing bar. Consumer: `@dune/plugin-inline-edit`. */
-    "bar.actions": (ctx: BarActionContext) => BarAction[];
-  }
-}
+/**
+ * The bar's contribution point: each contributing plugin adds one function that
+ * returns its buttons for a response. Consumer: this plugin.
+ */
+export const BAR_ACTIONS: CapabilityKey<(ctx: BarActionContext) => BarAction[]> = capabilityKey("bar.actions");

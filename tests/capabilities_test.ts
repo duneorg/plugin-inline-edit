@@ -45,7 +45,7 @@ Deno.test("setup() provides the inline-edit slot, built from the capability cont
 function reader(barActions: unknown[], prefix: string | null = "/admin") {
   return {
     get: (name: string) => (name === "admin.prefix" && prefix ? { prefix } : undefined),
-    list: (point: string) => (point === "bar.actions" ? barActions : []),
+    list: (key: { name: string }) => (key.name === "bar.actions" ? barActions : []),
     providers: () => [],
   };
 }

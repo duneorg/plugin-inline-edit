@@ -38,7 +38,7 @@
 import type { DunePlugin } from "@dune/core/plugins";
 import { createInlineEditManager } from "./manager.ts";
 import { injectAdminBar } from "./bar.ts";
-import "./bar-actions.ts";
+import { BAR_ACTIONS } from "./bar-actions.ts";
 
 const plugin: DunePlugin = {
   name: "inline-edit",
@@ -89,7 +89,7 @@ const plugin: DunePlugin = {
 
     // Buttons any plugin contributed to the `bar.actions` point. This bar
     // renders them without knowing what they do.
-    const actions = capabilities.list("bar.actions").flatMap((contribute) => contribute({ page }));
+    const actions = capabilities.list(BAR_ACTIONS).flatMap((contribute) => contribute({ page }));
 
     return injectAdminBar(response, {
       sourcePath: page.sourcePath,
@@ -104,6 +104,7 @@ const plugin: DunePlugin = {
 export default plugin;
 
 export { createInlineEditManager } from "./manager.ts";
+export { BAR_ACTIONS } from "./bar-actions.ts";
 export type { BarAction, BarActionContext } from "./bar-actions.ts";
 export type {
   InlineEditClient,

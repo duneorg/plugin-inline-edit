@@ -14,10 +14,11 @@
   `onPageUpdate` carries the editor's name as `actor`.
 
 - **The bar declares its own extension point, and reads what it needs per request (#127).**
-  `bar.actions` is declared here, by declaration merging, with its types `BarAction` and
+  `bar.actions` is declared here, as the typed key `BAR_ACTIONS`, with its types `BarAction` and
   `BarActionContext` (renamed from core's `AdminBarAction` / `AdminBarActionContext`, which
   left core's contract; the context no longer carries `adminPrefix`). A plugin that adds a
-  button imports the types from `@dune/plugin-inline-edit`. `transformResponse` reads the
+  button imports the types and `BAR_ACTIONS` from `@dune/plugin-inline-edit` (or recreates the key from
+  the name `bar.actions`). `transformResponse` reads the
   contributions and the `admin.prefix` slot from `ResponseTransformContext.capabilities`
   instead of `barActions` / `adminPrefix`.
 - **Provides the `editor.inline` capability and reads `bar.actions`, instead of
