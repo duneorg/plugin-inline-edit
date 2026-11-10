@@ -27,7 +27,7 @@ function setup(opts: { allowTsxFormat?: string[]; frontmatter?: Record<string, u
   const run = (
     method: string,
     path: string,
-    editor: { id?: string; roles: string[] } = { roles: ["editor"] },
+    editor: { id?: string; roles: string[]; relation?: "admin" | "editor" | "author" } = { roles: ["editor"] },
     body?: unknown,
   ) =>
     handle(
@@ -36,7 +36,14 @@ function setup(opts: { allowTsxFormat?: string[]; frontmatter?: Record<string, u
         body: body === undefined ? undefined : JSON.stringify(body),
       }),
       {
-        editor: { id: editor.id ?? "u1", username: "alice", roles: editor.roles, source: "site" },
+        editor: {
+          id: editor.id ?? "u1",
+          username: "alice",
+          roles: editor.roles,
+          // Core decides this from the site's role_grants; by default a role name is its own relation.
+          relation: editor.relation ?? (editor.roles.includes("admin") ? "admin" : editor.roles.includes("editor") ? "editor" : "author"),
+          source: "site",
+        },
         path,
         pageFrontmatter: () => Promise.resolve(frontmatter),
       },
@@ -134,10 +141,18 @@ Deno.test("a failing commit is a 500 that does not leak the error", async () => 
     patchFields: () => Promise.resolve(),
   });
   const res = await handle(new Request("http://localhost/x", { method: "POST" }), {
-    editor: { id: "u1", username: "alice", roles: ["admin"], source: "site" },
+    editor: { id: "u1", username: "alice", roles: ["admin"], relation: "admin", source: "site" },
     path: `content/${PAGE}/commit`,
     pageFrontmatter: () => Promise.resolve({}),
   });
   assertEquals(res.status, 500);
   assertEquals(await res.json(), { error: "Internal error" });
+});
+
+Deno.test("ownership follows the relation core decided, not the role name: a mapped group is an editor", async () => {
+  const theirs = setup({ frontmatter: { createdBy: "someone-else" } });
+  // role_grants: { staff: editor } makes "staff" an editor relation, so it may write any page...
+  assertEquals((await theirs.run("POST", `content/${PAGE}/commit`, { roles: ["staff"], relation: "editor" })).status, 200);
+  // ...and an "editor" role the site mapped down to author is limited to its own pages.
+  assertEquals((await theirs.run("POST", `content/${PAGE}/commit`, { roles: ["editor"], relation: "author" })).status, 403);
 });

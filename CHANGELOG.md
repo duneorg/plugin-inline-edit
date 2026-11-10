@@ -12,6 +12,8 @@
   or "Open in admin": the admin contributes those through `bar.actions`. `commit()` and
   `patchFields()` stay on the manager object but are not part of core's `InlineEditManager`.
   `onPageUpdate` carries the editor's name as `actor`.
+  The author limit (an `author` writes only the pages it created) follows `EditorIdentity.relation`,
+  which core derives from `system.role_grants`, not role names.
 
 - **The bar declares its own extension point, and reads what it needs per request (#127).**
   `bar.actions` is declared here, as the typed key `BAR_ACTIONS`, with its types `BarAction` and

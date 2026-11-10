@@ -82,7 +82,9 @@ export function createRequestHandler(opts: RequestHandlerOptions) {
         error: "TSX format requires admin role. TSX pages execute server-side code and must be edited by trusted authors.",
       }, 403);
     }
-    if (!editor.roles.includes("admin") && !editor.roles.includes("editor")) {
+    // `relation` is core's decision from system.role_grants: admin and editor edit any page, an
+    // author only the pages it created.
+    if (editor.relation === "author") {
       const frontmatter = await ctx.pageFrontmatter(sourcePath);
       if (!frontmatter) return json({ error: "Page not found" }, 404);
       if (frontmatter[PAGE_OWNER_KEY] !== editor.id) return json({ error: "Forbidden" }, 403);
