@@ -42,7 +42,7 @@ import { BAR_ACTIONS } from "./bar-actions.ts";
 
 const plugin: DunePlugin = {
   name: "inline-edit",
-  version: "2.2.3",
+  version: "3.0.0",
   description: "Y.js-backed real-time inline content editing (TipTap WYSIWYG) with an editing bar, for any signed-in editor.",
   hooks: {},
 

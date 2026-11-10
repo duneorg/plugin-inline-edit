@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [3.0.0] — 2026-11-10
+
+Pairs with `@dune/core` 0.36 and needs it.
+
 ### Changed — BREAKING
 
 - **Serves its own HTTP routes, so the bar works without an admin (#127).** `source`, `commit` and
