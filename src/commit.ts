@@ -77,8 +77,8 @@ export async function commitDoc(opts: {
    * Fires `onPageUpdate` after a successful write, matching plugin-admin's
    * page-save route — without this, plugins that react to that hook (e.g.
    * regenerating content derived from the edited page) never see inline
-   * edits, only edits made through the admin CRUD routes. Optional so
-   * callers that predate AdminServicesContext.hooks still work.
+   * edits, only edits made through the admin CRUD routes. Optional so a
+   * caller that omits it (a test, a script) still works.
    */
   hooks?: HookRegistry;
 }): Promise<void> {
@@ -108,7 +108,7 @@ export async function commitDoc(opts: {
   // Write to disk.
   await storage.write(filePath, committed);
 
-  hooks?.fire("onPageUpdate", { sourcePath }).catch((err) =>
+  hooks?.fire("onPageUpdate", { sourcePath, actor: author }).catch((err) =>
     warnThrottled("hook", "onPageUpdate hook failed", err)
   );
 }
@@ -173,7 +173,7 @@ export async function patchFrontmatterFields(opts: {
 
   await storage.write(filePath, patched);
 
-  hooks?.fire("onPageUpdate", { sourcePath }).catch((err) =>
+  hooks?.fire("onPageUpdate", { sourcePath, actor: author }).catch((err) =>
     warnThrottled("hook", "onPageUpdate hook failed", err)
   );
 }

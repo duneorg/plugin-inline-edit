@@ -2,6 +2,40 @@
 
 ## [Unreleased]
 
+## [3.0.0] — 2026-11-10
+
+Pairs with `@dune/core` 0.36 and needs it.
+
+### Changed — BREAKING
+
+- **Serves its own HTTP routes, so the bar works without an admin (#127).** `source`, `commit` and
+  `fields` are at `/api/inline-edit/content/<encoded path>/...` (core gates them: signed-in editor
+  holding `pages.update`, same-origin writes), with the TSX and page-ownership rules the admin's
+  routes enforced. The bar is injected for any such editor, including a site user on a site with no
+  admin, and no longer requires an `admin.prefix` provider. The bar no longer renders "Edit source"
+  or "Open in admin": the admin contributes those through `bar.actions`. `commit()` and
+  `patchFields()` stay on the manager object but are not part of core's `InlineEditManager`.
+  `onPageUpdate` carries the editor's name as `actor`.
+  The author limit (an `author` writes only the pages it created) follows `EditorIdentity.relation`,
+  which core derives from `system.role_grants`, not role names.
+
+- **The bar declares its own extension point, and reads what it needs per request (#127).**
+  `bar.actions` is declared here, as the typed key `BAR_ACTIONS`, with its types `BarAction` and
+  `BarActionContext` (renamed from core's `AdminBarAction` / `AdminBarActionContext`, which
+  left core's contract; the context no longer carries `adminPrefix`). A plugin that adds a
+  button imports the types and `BAR_ACTIONS` from `@dune/plugin-inline-edit` (or recreates the key from
+  the name `bar.actions`). `transformResponse` reads the
+  contributions and the `admin.prefix` slot from `ResponseTransformContext.capabilities`
+  instead of `barActions` / `adminPrefix`.
+- **Provides the `editor.inline` capability and reads `bar.actions`, instead of
+  `adminServices` and `ctx.plugins` (duneorg/dune#97, `@dune/core` 0.36).** The manager
+  is declared in `setup()` with `api.capabilities.provide("editor.inline", ...)`; the admin
+  bar collects its buttons from `ResponseTransformContext.barActions`, which carries what
+  plugins contributed with `capabilities.contribute("bar.actions", ...)`. Core 0.36
+  removed `DunePlugin.adminServices`, `adminBarActions` and
+  `ResponseTransformContext.plugins`, so this release needs `@dune/core` 0.36 or newer
+  and a major version bump (3.0.0) at release.
+
 ### Fixed
 
 - **Failed saves and dropped frames are no longer silent (#3).** A failed write of the

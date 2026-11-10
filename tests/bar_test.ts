@@ -7,7 +7,6 @@ import { annotateEditableElements, buildAdminBarHtml } from "../src/bar.ts";
 const baseOpts = {
   sourcePath: "03.arbeitswelt/01.test.mdx",
   pageTitle: "Test",
-  adminPrefix: "/admin",
   userName: "admin",
   pluginVersion: "2.1.8",
 };
@@ -19,46 +18,21 @@ Deno.test("buildAdminBarHtml: no actions — bar renders with no action elements
   assertEquals(html.includes('class="dune-ab-action"'), false);
 });
 
-Deno.test("buildAdminBarHtml: escape link and source overlay point at /pages/edit?path=..., not the nonexistent /pages/<path>", () => {
-  // Regression test: adminPageUrl used to be `${adminPrefix}/pages/${encodedPath}`,
-  // a route that was never registered (plugin-admin only has
-  // /admin/pages/edit?path=... and /admin/pages/builder) — 404'd every time.
+Deno.test("buildAdminBarHtml: save, source and field calls go to this plugin's own /api/inline-edit routes, with no admin involved", () => {
   const html = buildAdminBarHtml(baseOpts);
-  const expectedUrl = "/admin/pages/edit?path=03.arbeitswelt%2F01.test.mdx";
-  // The escape link is a real full-page navigation — no embedded=1, full
-  // admin shell. The overlay iframe gets embedded=1 so plugin-admin's
-  // _layout.tsx drops the redundant sidebar/topbar chrome (see its own
-  // handling of that param).
-  assertStringIncludes(html, `<a href="${expectedUrl}" class="dune-ab-escape"`);
-  assertStringIncludes(
-    html,
-    `window.__DUNE_ADMIN_PAGE_URL__ = ${
-      JSON.stringify(expectedUrl + "&embedded=1")
-    }`,
-  );
-  assertEquals(html.includes(`/pages/03.arbeitswelt`), false);
-});
-
-Deno.test("buildAdminBarHtml: renders the source-editing overlay markup and open button", () => {
-  const html = buildAdminBarHtml(baseOpts);
-  assertStringIncludes(
-    html,
-    `<button id="dune-ab-edit-source">✎ Edit source</button>`,
-  );
-  assertStringIncludes(html, `<div id="dune-source-overlay">`);
-  assertStringIncludes(html, `<iframe id="dune-source-overlay-frame"`);
-  // Iframe src is set lazily by the client script on first open, not
-  // server-rendered — the overlay must not eagerly load the editor.
-  assertEquals(
-    html.includes(`<iframe id="dune-source-overlay-frame" src=`),
-    false,
-  );
+  const enc = "03.arbeitswelt%2F01.test.mdx";
+  assertStringIncludes(html, `window.__DUNE_COMMIT_URL__ = "/api/inline-edit/content/${enc}/commit"`);
+  assertStringIncludes(html, `window.__DUNE_FIELDS_URL__ = "/api/inline-edit/content/${enc}/fields"`);
+  assertStringIncludes(html, `window.__DUNE_SOURCE_URL__ = "/api/inline-edit/content/${enc}/source"`);
+  // Nothing of the admin's is baked in: its links and overlay are bar.actions it contributes.
+  assertEquals(html.includes("/admin"), false);
+  assertEquals(html.includes("dune-source-overlay"), false);
+  assertEquals(html.includes("Open in admin"), false);
 });
 
 Deno.test("buildAdminBarHtml: @media print hides the admin bar and its overlays", () => {
   // An admin printing straight from the browser (Ctrl+P / print-to-PDF)
-  // while viewing a page would otherwise get the fixed toolbar (and the
-  // source-editing overlay, if open) baked into the printout. The scripted
+  // while viewing a page would otherwise get the fixed toolbar baked into the printout. The scripted
   // PDF export (scripts/export-pdf.ts) browses anonymously and never sees
   // any of this to begin with — this covers the manual-print path only.
   const html = buildAdminBarHtml(baseOpts);
@@ -66,7 +40,6 @@ Deno.test("buildAdminBarHtml: @media print hides the admin bar and its overlays"
   if (!printBlock) throw new Error("no @media print block found");
   assertStringIncludes(printBlock, "#dune-admin-bar");
   assertStringIncludes(printBlock, "#dune-ao-edit-handle");
-  assertStringIncludes(printBlock, "#dune-source-overlay");
   assertStringIncludes(printBlock, ".dune-bubble-menu");
   assertStringIncludes(printBlock, ".dune-ao-body-toolbar");
   assertStringIncludes(printBlock, "display: none !important");
@@ -130,21 +103,19 @@ Deno.test("buildAdminBarHtml: label/icon/href are HTML-escaped", () => {
 
 // ---------------------------------------------------------------------------
 // The "Editing"/"Save" buttons are omitted entirely on pages with nothing
-// to edit — "Edit source" always stays, since it works regardless.
+// to edit; buttons other plugins contribute stay.
 // ---------------------------------------------------------------------------
 
 Deno.test("buildAdminBarHtml: hasEditableContent defaults to true — Editing/Save render", () => {
   const html = buildAdminBarHtml(baseOpts);
   assertStringIncludes(html, `<button id="dune-ab-edit-toggle">`);
   assertStringIncludes(html, `<button id="dune-ab-save">`);
-  assertStringIncludes(html, `<button id="dune-ab-edit-source">`);
 });
 
-Deno.test("buildAdminBarHtml: hasEditableContent:false omits Editing/Save but keeps Edit source", () => {
+Deno.test("buildAdminBarHtml: hasEditableContent:false omits Editing/Save", () => {
   const html = buildAdminBarHtml({ ...baseOpts, hasEditableContent: false });
   assertEquals(html.includes(`id="dune-ab-edit-toggle"`), false);
   assertEquals(html.includes(`id="dune-ab-save"`), false);
-  assertStringIncludes(html, `<button id="dune-ab-edit-source">`);
 });
 
 // ---------------------------------------------------------------------------

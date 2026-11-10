@@ -153,7 +153,7 @@ Deno.test("commitDoc: works for a brand-new draft with no existing file", async 
   Deno.removeSync(rootDir, { recursive: true });
 });
 
-Deno.test("commitDoc: fires onPageUpdate with the sourcePath when hooks is provided", async () => {
+Deno.test("commitDoc: fires onPageUpdate with the sourcePath and the author as actor when hooks is provided", async () => {
   const { rootDir, storage, history, contentDir } = makeEnv();
   const sourcePath = "01.page/default.md";
   await storage.write(`${contentDir}/${sourcePath}`, "---\ntitle: Page\n---\nOriginal.\n");
@@ -163,7 +163,7 @@ Deno.test("commitDoc: fires onPageUpdate with the sourcePath when hooks is provi
   doc.transact(() => doc.getText("body").insert(0, "Edited."));
   await commitDoc({ doc, sourcePath, author: "alice", storage, history, contentDir, hooks });
 
-  assertEquals(fired, [{ event: "onPageUpdate", data: { sourcePath } }]);
+  assertEquals(fired, [{ event: "onPageUpdate", data: { sourcePath, actor: "alice" } }]);
   Deno.removeSync(rootDir, { recursive: true });
 });
 
@@ -252,7 +252,7 @@ Deno.test("patchFrontmatterFields: __body replaces the body via the auto-overlay
   Deno.removeSync(rootDir, { recursive: true });
 });
 
-Deno.test("patchFrontmatterFields: fires onPageUpdate with the sourcePath when hooks is provided", async () => {
+Deno.test("patchFrontmatterFields: fires onPageUpdate with the sourcePath and the author as actor when hooks is provided", async () => {
   const { rootDir, storage, history, contentDir } = makeEnv();
   const sourcePath = "01.page/default.md";
   await storage.write(`${contentDir}/${sourcePath}`, "---\ntitle: Old\n---\nBody.\n");
@@ -268,6 +268,6 @@ Deno.test("patchFrontmatterFields: fires onPageUpdate with the sourcePath when h
     hooks,
   });
 
-  assertEquals(fired, [{ event: "onPageUpdate", data: { sourcePath } }]);
+  assertEquals(fired, [{ event: "onPageUpdate", data: { sourcePath, actor: "carol" } }]);
   Deno.removeSync(rootDir, { recursive: true });
 });

@@ -38,11 +38,12 @@
 import type { DunePlugin } from "@dune/core/plugins";
 import { createInlineEditManager } from "./manager.ts";
 import { injectAdminBar } from "./bar.ts";
+import { BAR_ACTIONS } from "./bar-actions.ts";
 
 const plugin: DunePlugin = {
   name: "inline-edit",
-  version: "2.2.3",
-  description: "Y.js-backed real-time inline content editing (TipTap WYSIWYG) with admin bar.",
+  version: "3.0.0",
+  description: "Y.js-backed real-time inline content editing (TipTap WYSIWYG) with an editing bar, for any signed-in editor.",
   hooks: {},
 
   // Browser editor bundle — built by core at startup (deno bundle, resolving
@@ -52,14 +53,28 @@ const plugin: DunePlugin = {
     editor: import.meta.resolve("./client/editor.ts"),
   },
 
-  adminServices({ storage, history, dataDir, contentDir, hooks }) {
-    return {
-      inlineEdit: createInlineEditManager({ storage, history, dataDir, contentDir, hooks }),
-    };
+  // The `editor.inline` capability: core gates `/api/inline-edit/*` (who may
+  // edit, same-origin writes) and hands the WebSocket upgrade and every other
+  // request to this manager; the admin uses it for its collab socket and
+  // presence. Core builds it once the history engine and storage exist.
+  setup(api) {
+    api.capabilities.provide(
+      "editor.inline",
+      ({ storage, history, dataDir, contentDir, hooks, config }) =>
+        createInlineEditManager({
+          storage,
+          history,
+          dataDir,
+          contentDir,
+          hooks,
+          allowTsxFormat: config.system.content.allow_tsx_format,
+        }),
+    );
   },
 
-  transformResponse({ req, response, auth, page, adminPrefix, plugins }) {
-    // Only inject for authenticated admins with edit rights on content pages.
+  transformResponse({ req, response, auth, page, capabilities }) {
+    // Only inject for signed-in editors (a site user or the admin's user, core has
+    // checked pages.update) on content pages.
     if (!auth || !auth.hasPermission("pages.update")) return response;
     if (!page) return response;
 
@@ -67,19 +82,18 @@ const plugin: DunePlugin = {
     const contentType = response.headers.get("Content-Type") ?? "";
     if (!contentType.includes("text/html")) return response;
 
-    // Never inject into admin paths.
-    const url = new URL(req.url);
-    if (url.pathname.startsWith(adminPrefix)) return response;
+    // Never inject into the admin's own pages (core keeps transforms off them
+    // already). Read per request: this module is shared between sites.
+    const adminPrefix = capabilities.get("admin.prefix")?.prefix;
+    if (adminPrefix && new URL(req.url).pathname.startsWith(adminPrefix)) return response;
 
-    // Collect adminBarActions from every plugin (including this one — it
-    // declares none) — see DunePlugin.adminBarActions for why this bar
-    // renders other plugins' buttons without knowing what they do.
-    const actions = plugins.flatMap((p) => p.adminBarActions?.({ page, adminPrefix }) ?? []);
+    // Buttons any plugin contributed to the `bar.actions` point. This bar
+    // renders them without knowing what they do.
+    const actions = capabilities.list(BAR_ACTIONS).flatMap((contribute) => contribute({ page }));
 
     return injectAdminBar(response, {
       sourcePath: page.sourcePath,
       pageTitle: page.title,
-      adminPrefix,
       userName: auth.username,
       pluginVersion: plugin.version,
       actions,
@@ -90,6 +104,8 @@ const plugin: DunePlugin = {
 export default plugin;
 
 export { createInlineEditManager } from "./manager.ts";
+export { BAR_ACTIONS } from "./bar-actions.ts";
+export type { BarAction, BarActionContext } from "./bar-actions.ts";
 export type {
   InlineEditClient,
   InlineEditManagerOptions,

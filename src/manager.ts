@@ -14,6 +14,7 @@ import type { InlineEditManagerOptions, InlineEditSession, InlineEditClient } fr
 import { loadYDoc, persistYDoc, deleteYDoc } from "./ydoc-manager.ts";
 import { connectClient } from "./ws-server.ts";
 import { commitDoc, patchFrontmatterFields, splitFile } from "./commit.ts";
+import { createRequestHandler } from "./http.ts";
 
 // ── Security limits ────────────────────────────────────────────────────────────
 
@@ -21,6 +22,16 @@ const GC_INTERVAL_MS = 5 * 60 * 1000;  // 5 min
 const SESSION_IDLE_TTL_MS = 5 * 60 * 1000;
 
 let _gcHandle: ReturnType<typeof setInterval> | undefined;
+
+/**
+ * What the manager does with a committed edit. Not part of core's
+ * `InlineEditManager` (core never calls it: the routes in `http.ts` do), but
+ * kept on the object so tests and scripts can drive it directly.
+ */
+export interface InlineEditWriter {
+  commit(sourcePath: string, author: string): Promise<void>;
+  patchFields(sourcePath: string, fields: Record<string, unknown>, author: string): Promise<void>;
+}
 
 // ── Factory ────────────────────────────────────────────────────────────────────
 
@@ -36,7 +47,7 @@ let _gcHandle: ReturnType<typeof setInterval> | undefined;
  */
 export function createInlineEditManager(
   opts: InlineEditManagerOptions,
-): InlineEditManager {
+): InlineEditManager & InlineEditWriter {
   const { storage, history, dataDir, contentDir, hooks } = opts;
   const autoFlushMs = opts.autoFlushMs ?? 120_000;
 
@@ -132,7 +143,7 @@ export function createInlineEditManager(
 
   // ── Public API ───────────────────────────────────────────────────────────────
 
-  return {
+  const manager: InlineEditManager & InlineEditWriter = {
     handleUpgrade(req: Request, user: { id: string; name: string }): Response {
       if (req.headers.get("upgrade")?.toLowerCase() !== "websocket") {
         return new Response("Expected WebSocket upgrade", { status: 426 });
@@ -233,6 +244,8 @@ export function createInlineEditManager(
       });
     },
 
+    handleRequest: (req, ctx) => requestHandler(req, ctx),
+
     getPresence() {
       const result: import("@dune/core/inline-edit").DocumentPresence[] = [];
       for (const [sourcePath, { session }] of sessions) {
@@ -249,4 +262,14 @@ export function createInlineEditManager(
       return result;
     },
   };
+
+  const requestHandler = createRequestHandler({
+    storage,
+    contentDir,
+    allowTsxFormat: opts.allowTsxFormat,
+    commit: manager.commit,
+    patchFields: manager.patchFields,
+  });
+
+  return manager;
 }
