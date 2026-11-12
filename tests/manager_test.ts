@@ -11,7 +11,7 @@ import * as Y from "yjs";
 import * as syncProtocol from "y-protocols/sync";
 import * as encoding from "lib0/encoding";
 import * as decoding from "lib0/decoding";
-import { createHistoryEngine, createStorage } from "@dune/core";
+import { createHistoryEngine, createStorage } from "jsr:@dune/core@^0.37.0";
 import { createInlineEditManager } from "../src/manager.ts";
 import { encodeSourcePath } from "../src/ydoc-manager.ts";
 

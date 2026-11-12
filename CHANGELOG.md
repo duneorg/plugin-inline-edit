@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [3.1.0]
+
+### Changed
+
+- **Depends on `@dune/plugin-api` (`^1.2`), not on `@dune/core`.** `StorageAdapter`, `HistoryEngine`, `HookRegistry`,
+  `InlineEditManager`, `InlineEditRequestContext`, `DunePlugin` and the capability key helpers come from the contract
+  package, so a core release no longer forces a new version of this plugin. Works with any Dune that implements
+  plugin-api 1 (0.36 and later). A `src/` import of `@dune/core` now fails the tests; the tests themselves still boot
+  core.
+
 ## [3.0.0] — 2026-11-10
 
 Pairs with `@dune/core` 0.36 and needs it.

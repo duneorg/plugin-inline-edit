@@ -4,7 +4,7 @@
  */
 
 import { assertEquals, assertFalse } from "@std/assert";
-import { createStorage } from "@dune/core";
+import { createStorage } from "jsr:@dune/core@^0.37.0";
 import {
   deleteYDoc,
   encodeSourcePath,

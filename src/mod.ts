@@ -35,14 +35,14 @@
  * @since 1.0.0
  */
 
-import type { DunePlugin } from "@dune/core/plugins";
+import type { DunePlugin } from "@dune/plugin-api";
 import { createInlineEditManager } from "./manager.ts";
 import { injectAdminBar } from "./bar.ts";
 import { BAR_ACTIONS } from "./bar-actions.ts";
 
 const plugin: DunePlugin = {
   name: "inline-edit",
-  version: "3.0.0",
+  version: "3.1.0",
   description: "Y.js-backed real-time inline content editing (TipTap WYSIWYG) with an editing bar, for any signed-in editor.",
   hooks: {},
 

@@ -6,7 +6,7 @@
  * `DocumentPresence`) is defined by `@dune/core/inline-edit`.
  */
 
-import type { HistoryEngine, HookRegistry, StorageAdapter } from "@dune/core";
+import type { HistoryEngine, HookRegistry, StorageAdapter } from "@dune/plugin-api";
 
 // ── Session ───────────────────────────────────────────────────────────────────
 
