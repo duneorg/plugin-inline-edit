@@ -104,18 +104,14 @@ function jsonStr(s: string): string {
  */
 function renderBarActions(actions: BarAction[]): string {
   return actions.map((a) => {
-    const label = `${a.icon ? escapeHtml(a.icon) + " " : ""}${
-      escapeHtml(a.label)
-    }`;
+    const label = `${a.icon ? escapeHtml(a.icon) + " " : ""}${escapeHtml(a.label)}`;
     if (a.href) {
       return `<a id="${escapeAttr(a.id)}" class="dune-ab-action" href="${
         escapeAttr(a.href)
       }">${label}</a>`;
     }
     if (a.onClick) {
-      return `<button id="${
-        escapeAttr(a.id)
-      }" class="dune-ab-action" onclick="${
+      return `<button id="${escapeAttr(a.id)}" class="dune-ab-action" onclick="${
         escapeAttr(a.onClick)
       }">${label}</button>`;
     }
@@ -314,9 +310,7 @@ export function buildAdminBarHtml(opts: {
   window.__DUNE_EDIT_SOURCE_PATH__ = ${jsonStr(sourcePath)};
   window.__DUNE_COMMIT_URL__ = ${jsonStr(commitUrl)};
   window.__DUNE_FIELDS_URL__ = ${jsonStr(fieldsUrl)};
-  window.__DUNE_SOURCE_URL__ = ${
-    jsonStr(commitUrl.replace("/commit", "/source"))
-  };
+  window.__DUNE_SOURCE_URL__ = ${jsonStr(commitUrl.replace("/commit", "/source"))};
   window.__DUNE_USER_NAME__ = ${jsonStr(userName)};
   window.__DUNE_EDIT_WS_PATH__ = "/api/inline-edit/ws";
 

@@ -31,7 +31,7 @@ const MESSAGE_AWARENESS = 1;
 
 // ── Security limits ───────────────────────────────────────────────────────────
 
-const MAX_FRAME_BYTES = 512 * 1024;  // 512 KB per frame
+const MAX_FRAME_BYTES = 512 * 1024; // 512 KB per frame
 const MAX_CONNECTIONS_PER_DOC = 20;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

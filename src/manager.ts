@@ -10,15 +10,15 @@ import { warnThrottled } from "./log.ts";
 import type * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
 import type { InlineEditManager } from "@dune/plugin-api";
-import type { InlineEditManagerOptions, InlineEditSession, InlineEditClient } from "./types.ts";
-import { loadYDoc, persistYDoc, deleteYDoc } from "./ydoc-manager.ts";
+import type { InlineEditClient, InlineEditManagerOptions, InlineEditSession } from "./types.ts";
+import { deleteYDoc, loadYDoc, persistYDoc } from "./ydoc-manager.ts";
 import { connectClient } from "./ws-server.ts";
 import { commitDoc, patchFrontmatterFields, splitFile } from "./commit.ts";
 import { createRequestHandler } from "./http.ts";
 
 // ── Security limits ────────────────────────────────────────────────────────────
 
-const GC_INTERVAL_MS = 5 * 60 * 1000;  // 5 min
+const GC_INTERVAL_MS = 5 * 60 * 1000; // 5 min
 const SESSION_IDLE_TTL_MS = 5 * 60 * 1000;
 
 let _gcHandle: ReturnType<typeof setInterval> | undefined;
@@ -79,7 +79,7 @@ export function createInlineEditManager(
     const awareness = new awarenessProtocol.Awareness(doc);
     const session: InlineEditSession = {
       sourcePath,
-      ydocState: new Uint8Array(),  // tracked via doc, not used directly
+      ydocState: new Uint8Array(), // tracked via doc, not used directly
       clients: new Map(),
       flushTimer: undefined,
       lastActivity: Date.now(),
@@ -135,7 +135,9 @@ export function createInlineEditManager(
     }, GC_INTERVAL_MS);
     if (typeof Deno !== "undefined") {
       // Don't keep the process alive just for GC.
-      try { (_gcHandle as unknown as { unref?: () => void }).unref?.(); } catch { /* ignore */ }
+      try {
+        (_gcHandle as unknown as { unref?: () => void }).unref?.();
+      } catch { /* ignore */ }
     }
   }
 
@@ -180,7 +182,7 @@ export function createInlineEditManager(
             clientId,
             userId: user.id,
             name: user.name,
-            color: "#3498db",  // will be overridden in connectClient
+            color: "#3498db", // will be overridden in connectClient
             socket,
           };
 

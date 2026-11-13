@@ -76,11 +76,20 @@ export function buildBubbleMenu(): BubbleMenu {
   const linkBtn = btn("&#128279;", "Link");
 
   bar.append(
-    boldBtn, italicBtn, strikeBtn, codeBtn,
+    boldBtn,
+    italicBtn,
+    strikeBtn,
+    codeBtn,
     sep(),
-    h1Btn, h2Btn, h3Btn,
+    h1Btn,
+    h2Btn,
+    h3Btn,
     sep(),
-    ulBtn, olBtn, taskBtn, quoteBtn, codeBlockBtn,
+    ulBtn,
+    olBtn,
+    taskBtn,
+    quoteBtn,
+    codeBlockBtn,
     sep(),
     linkBtn,
   );
@@ -165,8 +174,14 @@ export function buildBubbleMenu(): BubbleMenu {
     });
 
     urlInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); applyUrl(); }
-      if (e.key === "Escape") { hideUrlView(); editor.commands.focus(); }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        applyUrl();
+      }
+      if (e.key === "Escape") {
+        hideUrlView();
+        editor.commands.focus();
+      }
     });
 
     // Active-state tracking

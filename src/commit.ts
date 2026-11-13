@@ -13,17 +13,15 @@
 import { warnThrottled } from "./log.ts";
 import type * as Y from "yjs";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
-import type {
-  HistoryEngine,
-  HookRegistry,
-  StorageAdapter,
-} from "@dune/plugin-api";
+import type { HistoryEngine, HookRegistry, StorageAdapter } from "@dune/plugin-api";
 import { getDocBody } from "./ydoc-manager.ts";
 
 // ── File splitting helpers ─────────────────────────────────────────────────────
 
 /** Split a raw content file into frontmatter header and body. */
-export function splitFile(raw: string): { header: string; frontmatter: Record<string, unknown>; body: string } {
+export function splitFile(
+  raw: string,
+): { header: string; frontmatter: Record<string, unknown>; body: string } {
   const match = raw.match(/^(---\r?\n([\s\S]*?)\r?\n---\r?\n?)([\s\S]*)$/);
   if (match) {
     let fm: Record<string, unknown> = {};
@@ -153,9 +151,7 @@ export async function patchFrontmatterFields(opts: {
   }
 
   // Patch frontmatter fields (may be empty after removing __body).
-  let patched = Object.keys(fields).length > 0
-    ? spliceFrontmatter(raw, fields)
-    : raw;
+  let patched = Object.keys(fields).length > 0 ? spliceFrontmatter(raw, fields) : raw;
 
   // Replace body if __body was provided.
   if (newBody !== undefined) {

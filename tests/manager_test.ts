@@ -81,9 +81,7 @@ function queueMessages(
 }
 
 function waitForOpen(socket: WebSocket): Promise<void> {
-  return new Promise((resolve) =>
-    socket.addEventListener("open", () => resolve(), { once: true })
-  );
+  return new Promise((resolve) => socket.addEventListener("open", () => resolve(), { once: true }));
 }
 
 function waitForClose(socket: WebSocket): Promise<void> {
@@ -169,8 +167,7 @@ async function editAndConfirm(
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 Deno.test({
-  name:
-    "inline editor: an edit followed by commit() persists to the content file on disk",
+  name: "inline editor: an edit followed by commit() persists to the content file on disk",
   // InlineEditManager has no public dispose() — its session Awareness
   // instances are meant to live for the server process's lifetime and are
   // only cleaned up by the 5-minute idle GC, far longer than this test runs.
@@ -229,8 +226,7 @@ Deno.test({
 });
 
 Deno.test({
-  name:
-    "inline editor: disconnecting without commit still persists the draft for the next session",
+  name: "inline editor: disconnecting without commit still persists the draft for the next session",
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {

@@ -43,7 +43,8 @@ import { BAR_ACTIONS } from "./bar-actions.ts";
 const plugin: DunePlugin = {
   name: "inline-edit",
   version: "3.1.0",
-  description: "Y.js-backed real-time inline content editing (TipTap WYSIWYG) with an editing bar, for any signed-in editor.",
+  description:
+    "Y.js-backed real-time inline content editing (TipTap WYSIWYG) with an editing bar, for any signed-in editor.",
   hooks: {},
 
   // Browser editor bundle — built by core at startup (deno bundle, resolving
@@ -106,8 +107,4 @@ export default plugin;
 export { createInlineEditManager } from "./manager.ts";
 export { BAR_ACTIONS } from "./bar-actions.ts";
 export type { BarAction, BarActionContext } from "./bar-actions.ts";
-export type {
-  InlineEditClient,
-  InlineEditManagerOptions,
-  InlineEditSession,
-} from "./types.ts";
+export type { InlineEditClient, InlineEditManagerOptions, InlineEditSession } from "./types.ts";

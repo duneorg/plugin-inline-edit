@@ -65,4 +65,6 @@ export interface BarAction {
  * The bar's contribution point: each contributing plugin adds one function that
  * returns its buttons for a response. Consumer: this plugin.
  */
-export const BAR_ACTIONS: CapabilityKey<(ctx: BarActionContext) => BarAction[]> = capabilityKey("bar.actions");
+export const BAR_ACTIONS: CapabilityKey<(ctx: BarActionContext) => BarAction[]> = capabilityKey(
+  "bar.actions",
+);

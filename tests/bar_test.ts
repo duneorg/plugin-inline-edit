@@ -1,7 +1,4 @@
-import {
-  assertEquals,
-  assertStringIncludes,
-} from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { annotateEditableElements, buildAdminBarHtml } from "../src/bar.ts";
 
 const baseOpts = {
@@ -21,9 +18,18 @@ Deno.test("buildAdminBarHtml: no actions — bar renders with no action elements
 Deno.test("buildAdminBarHtml: save, source and field calls go to this plugin's own /api/inline-edit routes, with no admin involved", () => {
   const html = buildAdminBarHtml(baseOpts);
   const enc = "03.arbeitswelt%2F01.test.mdx";
-  assertStringIncludes(html, `window.__DUNE_COMMIT_URL__ = "/api/inline-edit/content/${enc}/commit"`);
-  assertStringIncludes(html, `window.__DUNE_FIELDS_URL__ = "/api/inline-edit/content/${enc}/fields"`);
-  assertStringIncludes(html, `window.__DUNE_SOURCE_URL__ = "/api/inline-edit/content/${enc}/source"`);
+  assertStringIncludes(
+    html,
+    `window.__DUNE_COMMIT_URL__ = "/api/inline-edit/content/${enc}/commit"`,
+  );
+  assertStringIncludes(
+    html,
+    `window.__DUNE_FIELDS_URL__ = "/api/inline-edit/content/${enc}/fields"`,
+  );
+  assertStringIncludes(
+    html,
+    `window.__DUNE_SOURCE_URL__ = "/api/inline-edit/content/${enc}/source"`,
+  );
   // Nothing of the admin's is baked in: its links and overlay are bar.actions it contributes.
   assertEquals(html.includes("/admin"), false);
   assertEquals(html.includes("dune-source-overlay"), false);

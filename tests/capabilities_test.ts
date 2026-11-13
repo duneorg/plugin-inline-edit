@@ -73,7 +73,9 @@ Deno.test("transformResponse renders the buttons read from the bar.actions contr
 });
 
 Deno.test("transformResponse does nothing for visitors without edit rights", async () => {
-  const response = new Response("<html><body>x</body></html>", { headers: { "Content-Type": "text/html" } });
+  const response = new Response("<html><body>x</body></html>", {
+    headers: { "Content-Type": "text/html" },
+  });
   // deno-lint-ignore no-explicit-any
   const out = await (plugin.transformResponse as any)({
     req: new Request("http://localhost/about"),
@@ -87,7 +89,9 @@ Deno.test("transformResponse does nothing for visitors without edit rights", asy
 });
 
 Deno.test("transformResponse injects the bar on a site with no admin at all", async () => {
-  const response = new Response("<html><body><h1>Hi</h1></body></html>", { headers: { "Content-Type": "text/html" } });
+  const response = new Response("<html><body><h1>Hi</h1></body></html>", {
+    headers: { "Content-Type": "text/html" },
+  });
   // deno-lint-ignore no-explicit-any
   const out = await (plugin.transformResponse as any)({
     req: new Request("http://localhost/about"),
@@ -103,7 +107,9 @@ Deno.test("transformResponse injects the bar on a site with no admin at all", as
 });
 
 Deno.test("transformResponse skips the admin's own pages, using the prefix the admin provides", async () => {
-  const response = new Response("<html><body>x</body></html>", { headers: { "Content-Type": "text/html" } });
+  const response = new Response("<html><body>x</body></html>", {
+    headers: { "Content-Type": "text/html" },
+  });
   // deno-lint-ignore no-explicit-any
   const out = await (plugin.transformResponse as any)({
     req: new Request("http://localhost/panel/pages"),

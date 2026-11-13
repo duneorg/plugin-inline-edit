@@ -45,7 +45,9 @@ export function validatePagePath(p: string): boolean {
   const lower = p.toLowerCase();
   if (lower.includes("%2e%2e") || lower.includes("%00")) return false;
   if (/^[a-zA-Z]:\//.test(p)) return false;
-  return p.split("/").every((seg) => seg !== "" && seg !== "." && seg !== ".." && /^[a-zA-Z0-9._@-]+$/.test(seg));
+  return p.split("/").every((seg) =>
+    seg !== "" && seg !== "." && seg !== ".." && /^[a-zA-Z0-9._@-]+$/.test(seg)
+  );
 }
 
 /** Build `InlineEditManager.handleRequest`. */
@@ -53,7 +55,10 @@ export function createRequestHandler(opts: RequestHandlerOptions) {
   const { storage, contentDir, commit, patchFields } = opts;
   const allowTsx = opts.allowTsxFormat ?? ["admin"];
 
-  return async function handleRequest(req: Request, ctx: InlineEditRequestContext): Promise<Response> {
+  return async function handleRequest(
+    req: Request,
+    ctx: InlineEditRequestContext,
+  ): Promise<Response> {
     const parts = ctx.path.split("/");
     if (parts.length !== 3 || parts[0] !== "content") return json({ error: "Not found" }, 404);
 
@@ -79,7 +84,8 @@ export function createRequestHandler(opts: RequestHandlerOptions) {
     const { editor } = ctx;
     if (/\.tsx$/i.test(sourcePath) && !editor.roles.some((r) => allowTsx.includes(r))) {
       return json({
-        error: "TSX format requires admin role. TSX pages execute server-side code and must be edited by trusted authors.",
+        error:
+          "TSX format requires admin role. TSX pages execute server-side code and must be edited by trusted authors.",
       }, 403);
     }
     // `relation` is core's decision from system.role_grants: admin and editor edit any page, an
