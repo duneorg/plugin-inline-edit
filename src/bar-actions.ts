@@ -15,7 +15,7 @@
  * @module
  */
 
-import { type CapabilityKey, capabilityKey } from "@dune/core/plugin-api";
+import { type CapabilityKey, capabilityKey } from "@dune/plugin-api";
 
 /**
  * Context passed to a `bar.actions` contribution: what belongs on the bar for

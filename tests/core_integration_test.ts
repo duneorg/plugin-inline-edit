@@ -5,8 +5,8 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { bootstrap } from "@dune/core/bootstrap";
-import { createDuneApp } from "@dune/core/fresh-app";
+import { bootstrap } from "jsr:@dune/core@^0.37.0/bootstrap";
+import { createDuneApp } from "jsr:@dune/core@^0.37.0/fresh-app";
 import plugin from "../src/mod.ts";
 
 async function withSite(
@@ -57,9 +57,9 @@ Deno.test(
 
 // ── End to end: a site user edits with no admin plugin ─────────────────────────
 
-import { createLocalUserStore } from "@dune/core/auth/user-store";
-import { createSessionManager, createSessionStore } from "@dune/core/session";
-import { createStorage } from "@dune/core/storage";
+import { createLocalUserStore } from "jsr:@dune/core@^0.37.0/auth/user-store";
+import { createSessionManager, createSessionStore } from "jsr:@dune/core@^0.37.0/session";
+import { createStorage } from "jsr:@dune/core@^0.37.0/storage";
 
 const opts = { sanitizeOps: false, sanitizeResources: false };
 

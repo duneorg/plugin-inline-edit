@@ -22,7 +22,7 @@ import * as decoding from "lib0/decoding";
 import type { InlineEditClient, InlineEditSession } from "./types.ts";
 import { persistYDoc } from "./ydoc-manager.ts";
 import { warnThrottled } from "./log.ts";
-import type { StorageAdapter } from "@dune/core";
+import type { StorageAdapter } from "@dune/plugin-api";
 
 // ── Protocol constants ────────────────────────────────────────────────────────
 

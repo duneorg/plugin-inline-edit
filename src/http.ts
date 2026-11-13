@@ -15,8 +15,8 @@
  * @module
  */
 
-import type { InlineEditRequestContext } from "@dune/core/inline-edit";
-import type { StorageAdapter } from "@dune/core";
+import type { InlineEditRequestContext } from "@dune/plugin-api";
+import type { StorageAdapter } from "@dune/plugin-api";
 import { splitFile } from "./commit.ts";
 import { warnThrottled } from "./log.ts";
 

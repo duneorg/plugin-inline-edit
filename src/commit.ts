@@ -13,9 +13,11 @@
 import { warnThrottled } from "./log.ts";
 import type * as Y from "yjs";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
-import type { StorageAdapter } from "@dune/core";
-import type { HistoryEngine } from "@dune/core";
-import type { HookRegistry } from "@dune/core";
+import type {
+  HistoryEngine,
+  HookRegistry,
+  StorageAdapter,
+} from "@dune/plugin-api";
 import { getDocBody } from "./ydoc-manager.ts";
 
 // ── File splitting helpers ─────────────────────────────────────────────────────

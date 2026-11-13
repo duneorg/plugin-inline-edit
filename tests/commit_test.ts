@@ -5,8 +5,8 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import * as Y from "yjs";
-import { createHistoryEngine, createStorage } from "@dune/core";
-import type { HookRegistry } from "@dune/core";
+import { createHistoryEngine, createStorage } from "jsr:@dune/core@^0.37.0";
+import type { HookRegistry } from "@dune/plugin-api";
 import {
   commitDoc,
   patchFrontmatterFields,

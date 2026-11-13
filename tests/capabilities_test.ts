@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { createHistoryEngine, createStorage } from "@dune/core";
+import { createHistoryEngine, createStorage } from "jsr:@dune/core@^0.37.0";
 import plugin from "../src/mod.ts";
 
 Deno.test("setup() provides the inline-edit slot, built from the capability context", async () => {

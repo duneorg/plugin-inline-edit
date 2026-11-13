@@ -11,7 +11,7 @@
  */
 
 import * as Y from "yjs";
-import type { StorageAdapter } from "@dune/core";
+import type { StorageAdapter } from "@dune/plugin-api";
 
 /**
  * Encode a source path to a safe filename.

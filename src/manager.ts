@@ -9,7 +9,7 @@
 import { warnThrottled } from "./log.ts";
 import type * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
-import type { InlineEditManager } from "@dune/core/inline-edit";
+import type { InlineEditManager } from "@dune/plugin-api";
 import type { InlineEditManagerOptions, InlineEditSession, InlineEditClient } from "./types.ts";
 import { loadYDoc, persistYDoc, deleteYDoc } from "./ydoc-manager.ts";
 import { connectClient } from "./ws-server.ts";
@@ -247,7 +247,7 @@ export function createInlineEditManager(
     handleRequest: (req, ctx) => requestHandler(req, ctx),
 
     getPresence() {
-      const result: import("@dune/core/inline-edit").DocumentPresence[] = [];
+      const result: import("@dune/plugin-api").DocumentPresence[] = [];
       for (const [sourcePath, { session }] of sessions) {
         if (session.clients.size === 0) continue;
         result.push({
