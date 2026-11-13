@@ -9,9 +9,14 @@
   "exports": {
     ".": "./src/mod.ts"
   },
+  "fmt": {
+    "lineWidth": 100,
+    "proseWrap": "preserve",
+    "exclude": ["deno.lock", "**/*.md", ".github/"]
+  },
   "tasks": {
     "test": "deno test -A --config=deno.dev.json tests/",
-    "check": "deno lint src/ && deno check src/**/*.ts"
+    "check": "deno fmt --check && deno lint src/ && deno check src/**/*.ts"
   },
   "imports": {
     "@dune/plugin-api": "jsr:@dune/plugin-api@^1.2.0",
